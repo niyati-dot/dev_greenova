@@ -1,0 +1,43 @@
+{
+  "name": "dev_Greenova",
+  "image": "mcr.microsoft.com/devcontainers/python:3",
+  "workspaceFolder": "/workspaces/dev_greenova",
+  "workspaceMount": "source=/Users/adriangallo/devcontainer,target=/workspaces/dev_greenova,type=bind,consistency=cached",
+  "features": {
+    "ghcr.io/marcozac/devcontainer-features/shellcheck:1": {}
+  },
+  "customizations": {
+    "vscode": {
+      "settings": {},
+      "extensions": [
+        "ms-python.python",
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "batisteo.vscode-django",
+        "EditorConfig.EditorConfig",
+        "dotenv.dotenv-vscode",
+        "ms-azuretools.vscode-docker",
+        "dbaeumer.vscode-eslint",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+        "esbenp.prettier-vscode",
+        "ms-python.black-formatter",
+        "ms-python.isort",
+        "figma.figma-vscode-extension",
+        "yzhang.markdown-all-in-one",
+        "DavidAnson.vscode-markdownlint",
+        "mechatroner.rainbow-csv",
+        "monosans.djlint",
+        "timonwong.shellcheck"
+      ]
+    }
+  },
+  "mounts": [
+    "source=/Users/adriangallo/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
+    "source=/Users/adriangallo/.gnupg,target=/home/vscode/.gnupg,type=bind,readonly",
+    "source=dev_greenova_data,target=/mnt/data,type=volume"
+  ],
+  "forwardPorts": [8000, 8080],
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteUser": "vscode"
+}
