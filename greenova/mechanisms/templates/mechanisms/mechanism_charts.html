@@ -1,0 +1,13 @@
+<div id="chart-container">
+  {% if mechanism_charts %}
+    {% include "mechanisms/components/_charts.html" %}
+  {% elif error %}
+    <div class="notice error" role="alert">
+      <p>{{ error }}</p>
+    </div>
+  {% else %}
+    <div class="notice" role="status">
+      <p>Please select a project to view mechanism charts.</p>
+    </div>
+  {% endif %}
+</div>

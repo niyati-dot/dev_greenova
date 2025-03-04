@@ -1,60 +1,101 @@
-# EditorConfig is awesome: https://editorconfig.org/
-
+# Top-most EditorConfig file
 root = true
 
-# Global defaults
+# Default settings for all files
 [*]
 charset = utf-8
 end_of_line = lf
 insert_final_newline = true
 trim_trailing_whitespace = true
 indent_style = space
-indent_size = 4
 
 # Python files
 [*.py]
-max_line_length = 88
 indent_size = 4
+max_line_length = 88
+profile = black
 
-# Web files
-[*.{html,js,json,yml,yaml}]
+# Django HTML templates
+[*.{html,htm,djhtml}]
+indent_size = 2
+max_line_length = 88
+
+# JavaScript files
+[*.{js,jsx,ts,tsx}]
+indent_size = 2
+max_line_length = 80
+
+# CSS files
+[*.{css,scss,sass,less}]
+indent_size = 2
+max_line_length = 80
+
+# JSON files
+[*.{json,jsonc}]
 indent_size = 2
 
-# Documentation
-[*.rst]
-indent_size = 3
-max_line_length = 79
+# YAML files
+[*.{yml,yaml}]
+indent_size = 2
 
-[docs/**.txt]
-max_line_length = 79
+# Markdown files
+[*.md]
+trim_trailing_whitespace = false
+max_line_length = off
 
-# Special cases
+# Makefiles require tabs
 [Makefile]
 indent_style = tab
 
-[*.bat]
+# Shell scripts
+[*.sh]
+indent_size = 2
+switch_case_indent = true
+
+# Documentation
+[*.rst]
+indent_size = 4
+max_line_length = 79
+
+# Git commit messages
+[COMMIT_EDITMSG]
+max_line_length = 72
+
+# Requirements files
+[requirements*.txt]
+indent_size = 4
+
+# SQL files
+[*.sql]
+indent_size = 2
+max_line_length = 80
+
+# TOML files
+[*.toml]
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+trim_trailing_whitespace = true
+max_line_length = 80
+quote_type = double
+array_trailing_comma = false
+array_auto_collapse = false
+array_auto_expand = true
+align_entries = true
+compact_arrays = true
+compact_entries = false
+
+[pyproject.toml]
+indent_size = 4
+indent_style = space
+max_line_length = 88
+
+# Make files
+[*.mk]
+indent_size = 4
 indent_style = tab
 
-# Vendor files
-[**/admin/js/vendor/**]
-indent_style = ignore
-indent_size = ignore
-
-[**.min.js]
-indent_style = ignore
-insert_final_newline = ignore
-
-# Legacy/specific formats
-[*.{c,cpp,h}]
+[Makefile]
+indent_style = tab
 indent_size = 4
-
-[*.{py,ini,toml,json}]
-indent_style = space
-indent_size = 4
-
-[*.{js,jsx,css,html,yml,yaml,md}]
-indent_style = space
-indent_size = 2
-
-[*.md]
-trim_trailing_whitespace = false
+max_line_length = 88

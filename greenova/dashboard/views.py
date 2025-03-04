@@ -1,104 +1,104 @@
-from datetime import timedelta
-
-from django.contrib.auth.decorators import login_required
-from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import render
-from django.utils import timezone
-from django.views.decorators.http import require_http_methods
+from typing import Dict, Any, cast, Optional, TypedDict
 from django.views.generic import TemplateView
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.conf import settings
+from django.http import HttpRequest
+from django.db.models import QuerySet
+from django.contrib.auth.models import AbstractUser
+from datetime import datetime
+from projects.models import Project
+from obligations.models import Obligation
+import logging
 
+# Constants for system information
+SYSTEM_STATUS = "operational"  # or fetch from settings/environment
+APP_VERSION = "1.0.0"  # or fetch from settings/environment
+LAST_UPDATED = datetime.now().date()  # or fetch from settings/environment
 
-@login_required
-@require_http_methods(["GET"])
-def dashboard_view(request):
-    """Dashboard view showing obligation statistics."""
-    # Get user's dashboard preferences
-    preferences = getattr(request.user, "dashboard_preferences", None)
-    refresh_interval = getattr(preferences, "refresh_interval", 30)
+logger = logging.getLogger(__name__)
 
-    # Calculate stats
-    now = timezone.now()
-    two_weeks = now + timedelta(days=14)
+class DashboardContext(TypedDict):
+    projects: QuerySet[Project]
+    selected_project_id: Optional[str]
+    system_status: str
+    app_version: str
+    last_updated: datetime
+    user: AbstractUser
+    debug: bool
+    error: Optional[str]
+    user_roles: Dict[str, str]
 
-    context = {
-        "user": request.user,
-        "now": timezone.now(),
-        "stats": {
-            "total_items": 0,
-            "due_soon": 0,
-            "overdue": 0,
-            "completed": 0,
-        },
-        "refresh_interval": refresh_interval,
-        "status_data": {
-            "labels": ["Pending", "In Progress", "Completed", "Overdue"],
-            "datasets": [
-                {
-                    "data": [0, 0, 0, 0],
-                    "backgroundColor": [
-                        "#3498db",  # Blue for pending
-                        "#f1c40f",  # Yellow for in progress
-                        "#2ecc71",  # Green for completed
-                        "#e74c3c",  # Red for overdue
-                    ],
-                }
-            ],
-        },
-    }
-    return render(request, "dashboard/index.html", context)
+class DashboardHomeView(LoginRequiredMixin, TemplateView):
+    """Main dashboard view."""
+    template_name = 'dashboard/dashboard.html'
+    login_url = 'authentication:login'
+    redirect_field_name = 'next'
 
+    def setup(self, request: HttpRequest, *args: Any, **kwargs: Any) -> None:
+        """Initialize view setup."""
+        super().setup(request, *args, **kwargs)
+        self.request = request
 
-@login_required
-@require_http_methods(["GET"])
-def refresh_stats(request):
-    """HTMX endpoint to refresh dashboard stats."""
-    context = {
-        "stats": {
-            "total_items": 0,
-            "due_soon": 0,
-            "overdue": 0,
-            "completed": 0,
-            "completed_trend": 0,
-        }
-    }
-    return render(request, "dashboard/components/stats_overview.html", context)
-
-
-class DashboardView(LoginRequiredMixin, TemplateView):
-    template_name = 'dashboard/index.html'
-
-    def get_context_data(self, **kwargs):
+    def get_context_data(self, **kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        """Get the context data for template rendering."""
         context = super().get_context_data(**kwargs)
-        # Add initial dashboard data
-        context.update(
-            {
-                'user': self.request.user,
-                'total_obligations': 0,  # Replace with actual data
-                'due_soon': 0,
-                'overdue': 0,
-                'completed': 0,
+
+        try:
+            user = cast(AbstractUser, self.request.user)
+            # Use prefetch_related for ManyToMany relationships
+            user_projects = Project.objects.filter(
+                memberships__user=user
+            ).prefetch_related('memberships', 'obligations').distinct()
+
+            dashboard_context: DashboardContext = {
+                'projects': user_projects,
+                'selected_project_id': self.request.GET.get('project_id'),
+                'system_status': SYSTEM_STATUS,
+                'app_version': APP_VERSION,
+                'last_updated': datetime.combine(LAST_UPDATED, datetime.min.time()),
+                'debug': settings.DEBUG,
+                'error': None,
+                'user': user,
+                'user_roles': {
+                    str(project.pk): project.get_user_role(user)
+                    for project in user_projects
+                }
             }
-        )
+
+            context.update(dashboard_context)
+            logger.info(f"Found {user_projects.count()} projects for user {user}")
+
+            # Add analytics data for selected project
+            selected_project_id = self.request.GET.get('project_id')
+            if selected_project_id:
+                try:
+                    project = user_projects.get(pk=selected_project_id)
+
+                    # Get obligations and force evaluation to QuerySet[Obligation]
+                    obligations = Obligation.objects.filter(
+                        projects=project
+                    ).select_related('project')
+
+                except Project.DoesNotExist:
+                    logger.error(f"Project not found: {selected_project_id}")
+                    context['error'] = "Selected project not found"
+                except Exception as e:
+                    logger.error(f"Error processing analytics: {str(e)}")
+                    context['error'] = "Error processing analytics data"
+
+        except Exception as e:
+            logger.error(f"Error loading dashboard: {str(e)}")
+            context['error'] = str(e)
+
         return context
 
-
-class DashboardStatsView(TemplateView):
-    template_name = 'dashboard/partials/stats.html'
-
-
-class PCEMPView(TemplateView):
-    """View for Portside CEMP dashboard."""
-
-    template_name = 'dashboard/pages/pcemp.html'
-
-
-class MS1180View(TemplateView):
-    """View for MS1180 dashboard."""
-
-    template_name = 'dashboard/pages/ms1180.html'
-
-
-class WA6946View(TemplateView):
-    """View for WA6946 dashboard."""
-
-    template_name = 'dashboard/pages/wa6946.html'
+    def get_projects(self) -> QuerySet[Project]:
+        """Get projects for the current user."""
+        try:
+            return Project.objects.prefetch_related(
+                'obligations',
+                'memberships'
+            ).all()
+        except Exception as e:
+            logger.error(f"Error fetching projects: {str(e)}")
+            return Project.objects.none()

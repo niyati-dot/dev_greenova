@@ -1,23 +1,18 @@
 {
   "recommendations": [
-    "ms-python.python",
+    "ms-python.autopep8",
+    "dbaeumer.vscode-eslint",
     "GitHub.copilot",
     "GitHub.copilot-chat",
-    "batisteo.vscode-django",
-    "EditorConfig.EditorConfig",
-    "dotenv.dotenv-vscode",
-    "ms-azuretools.vscode-docker",
-    "dbaeumer.vscode-eslint",
     "ms-python.vscode-pylance",
+    "ms-python.python",
     "ms-python.debugpy",
-    "esbenp.prettier-vscode",
-    "ms-python.black-formatter",
-    "ms-python.isort",
-    "figma.figma-vscode-extension",
-    "yzhang.markdown-all-in-one",
-    "DavidAnson.vscode-markdownlint",
-    "mechatroner.rainbow-csv",
-    "monosans.djlint",
-    "timonwong.shellcheck"
+    "foxundermoon.shell-format",
+    "EditorConfig.EditorConfig",
+    "batisteo.vscode-django",
+    "tamasfe.even-better-toml",
+    "ms-vscode.vscode-copilot-data-analysis",
+    "github.vscode-pull-request-github",
+    "ms-azuretools.vscode-docker"
   ]
 }

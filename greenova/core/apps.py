@@ -1,16 +1,17 @@
 from django.apps import AppConfig
+from django.contrib import admin
+
 
 class CoreConfig(AppConfig):
-    default_auto_field = 'django.db.models.BigAutoField'
-    name = 'core'
+    default_auto_field = "django.db.models.BigAutoField"
+    name = "core"
 
     def ready(self):
-        """Initialize app and connect signals."""
-        from django.conf import settings
-        # Initialize core app settings
-        settings.CORE_SETTINGS = {
-            'AUDIT_ENABLED': True,
-            'SYSTEM_MONITORING': True
-        }
-        # Import signals
-        from . import signals  # noqa: F401
+        """
+        Configure admin site settings when Django is ready.
+        This ensures the app registry is fully loaded.
+        """
+        # Customize admin site
+        admin.site.site_header = "Environmental Obligations Management"
+        admin.site.site_title = "Enssol Admin Portal"
+        admin.site.index_title = "Welcome to Enssol Environmental Obligations Management"

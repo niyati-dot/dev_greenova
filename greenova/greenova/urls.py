@@ -1,33 +1,23 @@
+from django.contrib import admin
+from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.contrib import admin
-from django.urls import include, path
+from django.shortcuts import redirect
+import logging
+
+logger = logging.getLogger(__name__)
+
+def home_router(request):
+    """Redirect all traffic to admin login page"""
+    return redirect('admin:index')
 
 urlpatterns = [
-    # Admin interface
-    path("admin/", admin.site.urls),
-    # Authentication and user management
-    path("accounts/", include("accounts.urls", namespace="accounts")),
-    # Core functionality
-    path("core/", include("core.urls", namespace="core")),
-    # Main dashboard
-    path("dashboard/", include("dashboard.urls", namespace="dashboard")),
-    # Environmental services
-    path("services/", include("services.urls", namespace="services")),
-    # Landing pages (root URLs)
-    path("", include("landing.urls", namespace="landing")),
+    # Redirect root URL to admin
+    path('', home_router, name='home'),
+
+    # Admin URL - this is the main access point for users
+    path('admin/', admin.site.urls),
+
+    # Keep these for functionality but they won't be directly accessible
+    path('authentication/', include('authentication.urls')),
 ]
-
-# Error handlers
-handler400 = "greenova.views.bad_request"
-handler403 = "greenova.views.permission_denied"
-handler404 = "greenova.views.not_found"
-handler500 = "greenova.views.server_error"
-
-if settings.DEBUG:
-    urlpatterns += static(
-        settings.STATIC_URL, document_root=settings.STATIC_ROOT
-    )
-    urlpatterns += static(
-        settings.MEDIA_URL, document_root=settings.MEDIA_ROOT
-    )

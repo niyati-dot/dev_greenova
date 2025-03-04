@@ -1,0 +1,127 @@
+/* This is the Ubuntu font we're using for the website */
+@font-face {
+  /* Imported statically to not rely on Google. */
+  font-family: 'Ubuntu';
+  src: url('/static/fonts/Ubuntu-Regular.ttf');
+}
+
+
+:root {
+  --greenova-font-family: "Ubuntu";
+  --greenova-font-weight: normal;
+  --greenova-line-height: 1.125;
+  --greenova-letter-spacing: 1px;
+
+  --pico-font-family: var(--greenova-font-family);
+  --pico-font-weight: var(--greenova-font-weight);
+  --pico-line-height: var(--greenova-line-height);
+
+  --greenova-border-radius: 8px;
+  --greenova-border-radius-small: 4px;
+  --greenova-spacing: 7.5px;
+  --greenova-padding: 10px;
+  --greenova-padding-small: 5px;
+  --greenova-shadow: 0 2px 2px rgba(0, 0, 0, 0.1);
+
+  --greenova-title-size: 24px;
+  --greenova-subtitle-size: 18px;
+  --greenova-text-size: 16px;
+  --greenova-table-size: 14px;
+
+  --greenova-button-size: 16px;
+}
+
+* {
+  letter-spacing: var(--greenova-letter-spacing);
+}
+
+/*Font: Ubuntu
+Title: 24
+Sub Titles: 18 (Bold)
+Text Entries: 16
+Table Entries: 14 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+
+  /* Title */
+  &:first-child {
+    font-size: var(--greenova-title-size);
+  }
+
+  /* Subtitle */
+  &:not(:first-child) {
+    font-size: var(--greenova-subtitle-size);
+    font-weight: bold;
+  }
+}
+
+/* Mutable Text Entries */
+input,
+optgroup,
+select,
+textarea {
+  font-size: var(--greenova-text-size);
+}
+
+/* Text Entries: 16 */
+p,
+article {
+  font-size: var(--greenova-text-size);
+}
+
+/* Table Entries: 14 */
+table,
+table thead,
+table tbody {
+  font-size: var(--greenova-table-size) !important;
+}
+
+
+/*Component Corner Radius: 8
+Inter Component Spacing: 15
+Component Padding: 10*/
+/* Buttons: 16(Bold) */
+button,
+[type='submit'],
+[type='reset'],
+[role='button'] {
+  font-size: var(--greenova-button-size);
+  font-weight: bold !important;
+
+  /* Stops top from looking weird */
+  min-height: 41px;
+
+  border-radius: var(--greenova-border-radius);
+  padding: var(--greenova-padding);
+}
+
+button#chat-toggle>span {
+  font-weight: normal !important;
+}
+
+/* If the button is apart of a menu... */
+[role='menuitem'] {
+  margin: 0px var(--greenova-spacing);
+}
+
+
+/* Navigation */
+[role='navigation'],
+[role='navigation'] ul,
+[role='navigation'] ul li {
+  border-radius: var(--greenova-border-radius);
+
+  margin: 0px;
+  padding: 0px;
+}
+
+[role='navigation'] [role="menuitem"] {
+  border-radius: var(--greenova-border-radius);
+
+  margin: 0px;
+  padding: var(--greenova-padding);
+}
