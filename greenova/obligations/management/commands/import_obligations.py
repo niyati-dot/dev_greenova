@@ -1,10 +1,13 @@
-import csv
-import logging
 from typing import Any, Dict, Tuple, Optional
 from django.core.management.base import BaseCommand, CommandParser
 from django.utils.dateparse import parse_date
 from django.db import transaction
 from django.db.models.signals import post_save
+from django.utils import timezone  # Add this import
+import datetime
+import csv
+import re
+import logging
 from projects.models import Project
 from obligations.models import Obligation
 from mechanisms.models import EnvironmentalMechanism
@@ -16,10 +19,16 @@ class Command(BaseCommand):
 
     # Mechanism mapping moved directly into the command
     MECHANISM_ID_MAPPING = {
-        'Environmental Protection Act 1986': 'EP_ACT_1986',
-        'Environmental Protection Regulations 1987': 'EP_REGS_1987',
-        'Portside CEMP': 'PORTSIDE_CEMP',  # Added mapping for common mechanism
-        # Add other mappings as needed
+        'MS1180': 'MS1180',
+        'W6946/2024/1': 'W6946/2024/1',
+        'Portside CEMP': 'PORTSIDE_CEMP',
+    }
+
+    # Add mapping for obligation number prefixes
+    OBLIGATION_PREFIX_MAPPING = {
+        'Condition': 'MS1180-',   # Map "Condition X" to "MS1180-X"
+        'Condtion': 'MS1180-',    # Handle typo in source data
+        'PCEMP': 'PCEMP-',        # Keep PCEMP prefix as is
     }
 
     def add_arguments(self, parser: CommandParser) -> None:
@@ -34,16 +43,89 @@ class Command(BaseCommand):
             action='store_true',
             help='Skip mechanism counts update (use if experiencing signal issues)'
         )
+        parser.add_argument(
+            '--force-update',
+            action='store_true',
+            help='Force update existing records even if they exist'
+        )
 
-    def clean_boolean(self, value: str) -> bool:
-        """Convert string boolean values to Python boolean."""
+    def clean_boolean(self, value: Any) -> bool:
+        """
+        Convert various input values to Python boolean.
+
+        Args:
+            value: Any value that needs to be converted to boolean
+
+        Returns:
+            bool: True if value is truthy, False otherwise
+        """
         if not value:
             return False
-        return str(value).lower() in ('yes', 'true', '1', 'y')
 
-    def get_or_create_mechanism(self, mechanism_name: str, project: Project) -> Tuple[Optional[EnvironmentalMechanism], bool]:
-        """Get or create an EnvironmentalMechanism instance."""
+        # Handle string values by converting to lowercase string first
+        if isinstance(value, str):
+            # Added support for 'Y' and 'N' values (case-sensitive)
+            if value.strip() == 'Y':
+                return True
+            elif value.strip() == 'N':
+                return False
+
+            # Handle other string variations
+            return value.lower().strip() in ('yes', 'true', '1', 'y', 'yes ', 'y ')
+
+        # Handle any other type
+        return bool(value)
+
+    def normalize_obligation_number(self, obligation_number: str) -> str:
+        """
+        Normalize obligation numbers to ensure consistent formatting.
+
+        Args:
+            obligation_number: Original obligation number string
+
+        Returns:
+            Properly formatted obligation number
+        """
+        if not obligation_number:
+            return ""
+
+        # Check if the obligation matches any of our known prefixes
+        for prefix_key, prefix_value in self.OBLIGATION_PREFIX_MAPPING.items():
+            if obligation_number.startswith(prefix_key):
+                # Extract the number part
+                number_part = obligation_number.replace(prefix_key, "").strip()
+                # Remove any leading/trailing spaces and replace multiple spaces with a single space
+                number_part = re.sub(r'\s+', ' ', number_part).strip()
+                # Remove any starting dash if present
+                if number_part.startswith('-'):
+                    number_part = number_part[1:].strip()
+                return f"{prefix_value}{number_part}"
+
+        # If no mapping matches, return as is but ensure PCEMP- format
+        if 'PCEMP' in obligation_number and not obligation_number.startswith('PCEMP-'):
+            # Extract number after PCEMP if exists
+            match = re.search(r'PCEMP[-\s]*(\d+)', obligation_number)
+            if match:
+                return f"PCEMP-{match.group(1)}"
+
+        return obligation_number
+
+    def get_or_create_mechanism(self, mechanism_name: Optional[str], project: Project) -> Tuple[Optional[EnvironmentalMechanism], bool]:
+        """
+        Get or create an EnvironmentalMechanism instance.
+
+        Args:
+            mechanism_name: Name of the mechanism, can be None
+            project: Project instance the mechanism belongs to
+
+        Returns:
+            Tuple containing (mechanism, created) where created is a boolean
+            indicating if the mechanism was newly created
+        """
         if not mechanism_name:
+            # Using string interpolation with getattr to safely access project.name
+            proj_name = getattr(project, 'name', 'Unknown')
+            logger.warning(f"No mechanism name provided for project {proj_name}")
             return None, False
 
         try:
@@ -62,11 +144,13 @@ class Command(BaseCommand):
                 return mechanism, False
             except EnvironmentalMechanism.DoesNotExist:
                 # Create new mechanism with proper status
+                # Using getattr to safely access project.name
+                proj_name = getattr(project, 'name', 'Unknown')
                 mechanism = EnvironmentalMechanism(
                     name=mech_name,
                     project=project,
-                    description=f'Auto-created from obligation import for {project.name}',
-                    status='not started',  # Set initial status
+                    description=f'Auto-created from obligation import for {proj_name}',
+                    status='not started',
                     not_started_count=0,
                     in_progress_count=0,
                     completed_count=0,
@@ -76,17 +160,20 @@ class Command(BaseCommand):
                 return mechanism, True
 
         except Exception as e:
+            # Using getattr to safely access project.name
+            proj_name = getattr(project, 'name', 'Unknown')
             logger.error(
-                f"Error creating mechanism {mechanism_name} for project {project.name}: {str(e)}"
+                f"Error creating mechanism {mechanism_name} for project {proj_name}: {str(e)}"
             )
             return None, False
 
     def process_row(self, row: Dict[str, Any], project: Project) -> Dict[str, Any]:
         """Process and clean a CSV row."""
+        # Get mechanism name, handling possible None value
         mechanism_name = row.get('primary__environmental__mechanism')
         mechanism, created = self.get_or_create_mechanism(mechanism_name, project)
 
-        if created:
+        if created and mechanism:
             logger.info(f"Created new mechanism: {mechanism_name}")
 
         # Normalize status
@@ -94,27 +181,67 @@ class Command(BaseCommand):
         if status not in ('not started', 'in progress', 'completed'):
             status = 'not started'
 
+        # Process environmental aspect with improved mapping
+        environmental_aspect = row.get('environmental__aspect') or ''
+
+        # Define mapping for commonly observed aspects and clean up format
+        aspect_mapping = {
+            'administration': 'Administration',
+            'cultural heritage management': 'Cultural Heritage Management',
+            'cultural heritage management ': 'Cultural Heritage Management',
+            'terrestrial fauna management': 'Terrestrial Fauna Management',
+            'biosecurity and pest management': 'Biosecurity And Pest Management',
+            'dust management': 'Dust Management',
+            'dust management ': 'Dust Management',
+            'reporting': 'Reporting',
+            'reporting ': 'Reporting',
+            'noise management': 'Noise Management',
+            'noise management ': 'Noise Management',
+            'erosion and sedimentation management': 'Erosion And Sedimentation Management',
+            'hazardous substances and hydrocarbon management': 'Hazardous Substances And Hydrocarbon Management',
+            'waste management': 'Waste Management',
+            'artificial light management': 'Artificial Light Management',
+            'audits and inspections': 'Audits And Inspections',
+            'design and construction requirements': 'Design And Construction Requirements',
+            'design and construction requirements ': 'Design And Construction Requirements',
+            'regulatory compliance reporting': 'Regulatory Compliance Reporting',
+            'regulatory compliance reporting ': 'Regulatory Compliance Reporting',
+            'portside cemp': 'Administration',
+            'limitations and extent of proposal ': 'Other',
+        }
+
+        # Try to map using our custom mapping
+        aspect_key = environmental_aspect.lower().strip()
+        if aspect_key in aspect_mapping:
+            environmental_aspect = aspect_mapping[aspect_key]
+        elif environmental_aspect:
+            # If no direct match but not empty, log a warning and default to "Other"
+            logger.warning(f"Environmental aspect '{environmental_aspect}' not recognized, defaulting to 'Other'")
+            environmental_aspect = 'Other'
+        else:
+            environmental_aspect = 'Other'
+
         # Process dates safely
         action_due_date = None
         if row.get('action__due_date'):
             try:
-                action_due_date = parse_date(row['action__due_date'])
-            except Exception:
-                logger.warning(f"Invalid date format for action_due_date: {row['action__due_date']}")
+                action_due_date = parse_date(row.get('action__due_date'))
+            except Exception as e:
+                logger.warning(f"Error parsing action due date for {row.get('obligation__number')}: {str(e)}")
 
         close_out_date = None
         if row.get('close__out__date'):
             try:
-                close_out_date = parse_date(row['close__out__date'])
-            except Exception:
-                logger.warning(f"Invalid date format for close_out_date: {row['close__out__date']}")
+                close_out_date = parse_date(row.get('close__out__date'))
+            except Exception as e:
+                logger.warning(f"Error parsing close out date for {row.get('obligation__number')}: {str(e)}")
 
         recurring_date = None
         if row.get('recurring__forcasted__date'):
             try:
-                recurring_date = parse_date(row['recurring__forcasted__date'])
-            except Exception:
-                logger.warning(f"Invalid date format for recurring_date: {row['recurring__forcasted__date']}")
+                recurring_date = parse_date(row.get('recurring__forcasted__date'))
+            except Exception as e:
+                logger.warning(f"Error parsing recurring forecasted date for {row.get('obligation__number')}: {str(e)}")
 
         # Make sure we have a valid obligation number
         obligation_number = row.get('obligation__number')
@@ -122,12 +249,18 @@ class Command(BaseCommand):
             logger.error("Missing obligation number in row, skipping")
             return {}
 
+        # Normalize the obligation number
+        normalized_obligation_number = self.normalize_obligation_number(obligation_number)
+
+        # Explicitly convert gap_analysis to boolean - THIS IS THE KEY FIX
+        gap_analysis_value = self.clean_boolean(row.get('gap__analysis'))
+
         return {
-            'obligation_number': obligation_number,
+            'obligation_number': normalized_obligation_number,
             'project': project,
             'primary_environmental_mechanism': mechanism,
             'procedure': row.get('procedure') or '',
-            'environmental_aspect': row.get('environmental__aspect') or '',
+            'environmental_aspect': environmental_aspect,
             'obligation': row.get('obligation') or '',
             'accountability': row.get('accountability') or '',
             'responsibility': row.get('responsibility') or '',
@@ -139,8 +272,6 @@ class Command(BaseCommand):
             'general_comments': row.get('general__comments') or '',
             'compliance_comments': row.get('compliance__comments') or '',
             'non_conformance_comments': row.get('non_conformance__comments') or '',
-            'evidence': row.get('evidence') or '',
-            'person_email': row.get('person_email') or '',
             'recurring_obligation': self.clean_boolean(row.get('recurring__obligation')),
             'recurring_frequency': row.get('recurring__frequency') or '',
             'recurring_status': row.get('recurring__status') or '',
@@ -150,27 +281,77 @@ class Command(BaseCommand):
             'site_or_desktop': row.get('site_or__desktop') or '',
             'new_control_action_required': self.clean_boolean(row.get('new__control__action_required', 'False')),
             'obligation_type': row.get('obligation_type') or '',
-            'gap_analysis': row.get('gap__analysis') or '',
-            'notes_for_gap_analysis': row.get('notes_for__gap__analysis') or '',
-            'covered_in_which_inspection_checklist': row.get('covered_in_which_inspection_checklist') or ''
+            'gap_analysis': gap_analysis_value,  # Using the properly converted boolean value
+            'notes_for_gap_analysis': row.get('notes_for__gap__analysis') or ''
         }
+
+    def create_or_update_obligation(self, obligation_data, force_update=False):
+        """
+        Create a new obligation or update an existing one.
+
+        Args:
+            obligation_data: Dictionary with obligation data
+            force_update: If True, update existing records
+
+        Returns:
+            tuple: (created, updated, skipped, error_message)
+        """
+        obligation_number = obligation_data.get('obligation_number')
+
+        try:
+            # Check if an obligation with this number already exists
+            existing_obligation = Obligation.objects.filter(obligation_number=obligation_number).first()
+
+            # Set current time for timestamp fields
+            current_time = timezone.now()
+
+            if existing_obligation:
+                if force_update:
+                    # Update existing obligation
+                    for key, value in obligation_data.items():
+                        if key != 'obligation_number':  # Don't update PK
+                            setattr(existing_obligation, key, value)
+
+                    # Always update the updated_at timestamp
+                    existing_obligation.updated_at = current_time
+                    existing_obligation.save()
+                    return (0, 1, 0, None)  # 0 created, 1 updated
+                else:
+                    # Skip existing obligations if force_update is False
+                    return (0, 0, 1, None)  # 0 created, 0 updated, 1 skipped
+            else:
+                # Create new obligation with timestamps
+                obligation_data['created_at'] = current_time
+                obligation_data['updated_at'] = current_time
+
+                # Create new obligation
+                obligation = Obligation(**obligation_data)
+                obligation.save()
+                return (1, 0, 0, None)  # 1 created, 0 updated
+        except Exception as e:
+            return (0, 0, 0, str(e))  # Error case
 
     def handle(self, *args: Any, **options: Any) -> None:
         """
         Main handler for importing obligations from a CSV file.
-
-        This command processes a CSV file containing obligations data and imports it into
-        the database. It supports dry runs and can bypass mechanism count updates to avoid
-        signal-related issues.
         """
         csv_file = options['csv_file']
         dry_run = options['dry_run']
         skip_counts_update = options['skip_counts_update']
+        force_update = options['force_update']
+
+        # Always run with skip_counts_update to avoid the signal issues
+        if not skip_counts_update:
+            self.stdout.write("Automatically enabling --skip-counts-update to prevent signal errors")
+            skip_counts_update = True
 
         # Temporarily disconnect signals if requested
         if skip_counts_update:
+            # Import the signal handler function directly
             from obligations.models import update_mechanism_counts_on_save
-            post_save.disconnect(update_mechanism_counts_on_save, sender=Obligation)
+
+            # Disconnect the signal entirely - we'll handle updates differently
+            post_save.disconnect(receiver=update_mechanism_counts_on_save, sender=Obligation)
             self.stdout.write("Disconnected post_save signal to skip mechanism counts update")
 
         logger.info(f"Starting import from {csv_file}")
@@ -180,6 +361,7 @@ class Command(BaseCommand):
         created_count = 0
         updated_count = 0
         error_count = 0
+        skipped_count = 0
 
         try:
             # Open and read the CSV file
@@ -190,15 +372,16 @@ class Command(BaseCommand):
             total_rows = len(rows)
             self.stdout.write(f"Found {total_rows} rows to process")
 
-            with transaction.atomic():
-                # Process each row in the CSV
-                for i, row in enumerate(rows, 1):
-                    if i % 5 == 0 or i == total_rows:
-                        self.stdout.write(f"Processing row {i}/{total_rows}...")
+            # Process each row in its own transaction
+            for i, row in enumerate(rows, 1):
+                if i % 5 == 0 or i == total_rows:
+                    self.stdout.write(f"Processing row {i}/{total_rows}...")
 
-                    row_count += 1
+                row_count += 1
 
-                    try:
+                # Process each row in its own transaction
+                try:
+                    with transaction.atomic():
                         # Get or create project
                         project_name = row.get('project__name')
                         if not project_name:
@@ -222,61 +405,59 @@ class Command(BaseCommand):
                             continue
 
                         if not dry_run:
-                            # Create or update obligation
-                            obligation_number = obligation_data.pop('obligation_number')
-                            try:
-                                obligation, created = Obligation.objects.update_or_create(
-                                    obligation_number=obligation_number,
-                                    defaults=obligation_data
-                                )
+                            # Create or update the obligation
+                            created, updated, skipped, error = self.create_or_update_obligation(
+                                obligation_data,
+                                force_update=force_update
+                            )
 
-                                if created:
-                                    created_count += 1
-                                else:
-                                    updated_count += 1
-
-                                action = "Created" if created else "Updated"
-                                logger.info(
-                                    f"{action} obligation {obligation.obligation_number} "
-                                    f"for project {project_name}"
-                                )
-                            except Exception as e:
-                                logger.error(f"Error saving obligation {obligation_number}: {str(e)}")
+                            if error:
+                                logger.error(f"Error saving obligation {obligation_data['obligation_number']}: {error}")
                                 self.stdout.write(
-                                    self.style.ERROR(f"Error saving obligation {obligation_number}: {str(e)}")
+                                    self.style.ERROR(f"Error saving obligation {obligation_data['obligation_number']}: {error}")
                                 )
                                 error_count += 1
-                    except Exception as e:
-                        logger.error(f"Error processing row {i}: {str(e)}")
-                        self.stdout.write(
-                            self.style.ERROR(f"Error processing row {i}: {str(e)}")
-                        )
-                        error_count += 1
-
-                if dry_run:
+                            else:
+                                created_count += created
+                                updated_count += updated
+                                skipped_count += skipped
+                except Exception as e:
+                    logger.error(f"Error processing row {i}: {str(e)}")
                     self.stdout.write(
-                        self.style.SUCCESS("Dry run completed successfully")
+                        self.style.ERROR(f"Error processing row {i}: {str(e)}")
                     )
-                    raise transaction.TransactionManagementError(
-                        "Dry run completed"
-                    )
+                    error_count += 1
 
+            if dry_run:
                 self.stdout.write(
-                    self.style.SUCCESS(
-                        f"Import completed: {created_count} created, {updated_count} updated, {error_count} errors"
-                    )
+                    self.style.SUCCESS("Dry run completed successfully")
                 )
+                raise transaction.TransactionManagementError(
+                    "Dry run completed"
+                )
+
+            self.stdout.write(
+                self.style.SUCCESS(
+                    f"Import completed: {created_count} created, {updated_count} updated, "
+                    f"{skipped_count} skipped, {error_count} errors"
+                )
+            )
 
             # Update mechanism counts if we skipped the signals
             if skip_counts_update:
                 self.stdout.write("Manually updating mechanism counts...")
                 mechanisms = EnvironmentalMechanism.objects.all()
+                updated_count = 0
+                error_count = 0
                 for mechanism in mechanisms:
                     try:
                         mechanism.update_obligation_counts()
+                        updated_count += 1
                     except Exception as e:
-                        logger.error(f"Error updating counts for {mechanism.name}: {str(e)}")
-                self.stdout.write("Mechanism counts updated")
+                        error_count += 1
+                        logger.error(f"Error updating counts for mechanism {mechanism.name}: {str(e)}")
+
+                self.stdout.write(f"Mechanism counts updated: {updated_count} updated, {error_count} errors")
 
         except FileNotFoundError:
             logger.error(f"File not found: {csv_file}")
@@ -292,10 +473,8 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.ERROR(f"Error importing obligations: {str(e)}"))
         finally:
-            # Reconnect signals if we disconnected them
-            if skip_counts_update:
-                from obligations.models import update_mechanism_counts_on_save
-                post_save.connect(update_mechanism_counts_on_save, sender=Obligation)
-                self.stdout.write("Reconnected post_save signal")
+            # We'll deliberately NOT reconnect the signal handler
+            # This avoids potential issues if the signal handler
+            # is connected but the parameters don't match
             logger.info("Import process completed")
             self.stdout.write("Import process completed")

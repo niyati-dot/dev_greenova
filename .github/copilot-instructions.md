@@ -776,7 +776,7 @@ CREATE TRIGGER update_obligations_timestamp
 
 1. Core Dependencies:
 
-   - Django==5.1.6
+   - Django==4.2.19
    - matplotlib==3.10.0
 
 2. Development Tools:
@@ -872,12 +872,12 @@ CREATE TRIGGER update_obligations_timestamp
 
 1. Python Version:
 
-   - Python 3.9 (exact version)
+   - Python 3.9.21 (exact version)
    - Email: `agallo@enveng-group.com.au`
 
 ### Project Metadata
 2. Django Version:
-   - Django 5.1.6 (exact version)
+   - Django 4.2.19 (exact version)
    - Ensure compatibility with Django 5.1.x features
    - Email: <agallo@enveng-group.com.au>
 ### Project Metadata
