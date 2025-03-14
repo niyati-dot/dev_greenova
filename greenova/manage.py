@@ -1,8 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.10
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-
+from dotenv import load_dotenv
+load_dotenv()
 
 def main():
     """Run administrative tasks."""
@@ -20,3 +21,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY")
+DEBUG = os.getenv("DEBUG", "False") =="Ture"
+ENV_ALLOWED_HOSTS = os.getenv("DJANGO_ALLOWED_HOSTS", "")

@@ -12,7 +12,7 @@
             stroke-linecap="round"
             stroke-linejoin="round" />
     </svg>
-    <span class="sr-only">Open Chat</span>
+    <!--<span class="sr-only">Open Chat</span>-->
   </button>
 
   <!-- Chat dialog -->
@@ -31,8 +31,6 @@
           ✕
         </a>
         <h2 id="chat-title">Chat with Greenova Assistant</h2>
-        <!-- Add close link -->
-
       </header>
 
       <!-- Messages container -->
@@ -43,8 +41,6 @@
            hx-trigger="load"
            hx-swap="innerHTML"
            hx-target="this">
-        <div id="chat-loading" class="loading" aria-hidden="true">
-          Loading messages...
         </div>
       </div>
 
@@ -55,21 +51,21 @@
             hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'
             hx-target="#chat-messages"
             hx-swap="beforeend scroll:bottom"
-            hx-indicator="#chat-loading"
             hx-trigger="submit">
         {% csrf_token %}
         <div class="input-group">
           <input type="text"
                  name="message"
                  hx-on="htmx:afterRequest: this.value = ''"
+                 data-loading-disable
+                 data-loading-disable
                  required>
-          <button type="submit">Send</button>
-        </div>
-        <div id="chat-loading" class="htmx-indicator">
-          Sending...
+          <button type="submit" data-loading-disable data-loading-aria-busy>
+            <span data-loading>Sending...</span>
+            Send
+          </button>
         </div>
       </form>
     </article>
   </dialog>
-
 </aside>

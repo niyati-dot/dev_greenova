@@ -25,6 +25,8 @@
    </body>
 ```
 
+Reference: See `/docs/resources/htmx.md` for more examples of semantic HTML structure with proper ARIA attributes for accessibility.
+
 
 2. Follow progressive enhancement layers:
    - Layer 1: Semantic HTML
@@ -37,11 +39,13 @@
 </form>
 ```
 
-   - Layer 2: CSS for styling (classless-PicoCSS directly in html) and only use Vanilla-Framework for utility classes as a last resort
+   - Layer 2: CSS for styling (classless-PicoCSS directly in html) and only use Django-Tailwind-Framework for utility classes as a last resort
 
+Reference: See `/docs/resources/pico.md` for comprehensive PicoCSS documentation and `/docs/resources/tailwind.md` for guidance on using Tailwind CSS as a last resort.
 
-   - Layer 3: Hyperscript first and then HTMX second for interactivity
+   - Layer 3: Django-Hyperscript first and then Django-HTMX second for interactivity
 
+Reference: See `/docs/resources/hyperscript.md` for django-hyperscript implementation and `/docs/resources/htmx.md` for django-htmx integration patterns.
 
    - Layer 4: Web APIs for data
 
@@ -51,6 +55,8 @@
   <figcaption>Monthly transaction volume</figcaption>
 </figure>
 ```
+
+Reference: See `/docs/resources/matplotlib.md` for integrating Matplotlib with Django for data visualization.
 
    - Layer 5: JavaScript as fallback
 
@@ -122,7 +128,7 @@
 
 2. Progressive Enhancement:
    - Base functionality without JavaScript
-   - HTMX integration with proper attributes
+   - Django-HTMX integration with proper attributes
    - CSRF token handling in forms
    - Clear loading/error indicators
 
@@ -147,14 +153,14 @@
 
 ### Framework Integration
 
-1. -HTMX Requirements:
+1. -Django-HTMX Requirements:
 
    - Use hx-get for AJAX requests
    - Implement proper event handlers
    - Define clear swap targets
    - Enable URL history management
 
-2. Chartjs Implementation:
+2. Matplotlib Implementation:
    - Use Django template tags
    - Implement responsive chart configs
    - Proper sizing of chart containers
@@ -758,7 +764,7 @@ CREATE TRIGGER update_obligations_timestamp
 5. **Python**: Programming language for backend development.
 6. **MatPlotLib**: Python plotting library.
 7. **Pip**: Python package manager.
-8. **HTMX**: Library for AJAX interactions.
+8. **Django-HTMX**: Python implementation of the library for AJAX interactions with HTMX to use in Django.
 9. **Modern-Normalize**: CSS reset library.
 10. **NVM**: Node Version Manager for managing Node.js versions.
 11. **Node.js**: JavaScript runtime for frontend development.
@@ -767,17 +773,20 @@ CREATE TRIGGER update_obligations_timestamp
 14. **Pylance**: Python language server for Visual Studio Code.
 17. **Eslint**: JavaScript linter.
 18. **Debugpy**: Python debugger for VS Code.
-19. **Hyperscript**: JavaScript library for creating HTML elements.
+19. **Django-Hyperscript**: Python implementation to use hyperscript in Django.
 20. **venv**: Python virtual environment tool.
 21. **PicoCSS-classless**: Minimal CSS framework.
-22. **Vanilla-Framework**: Ubuntu's utility-CSS framework for frontend development.
+22. **Django-Tailwind**: Python implementation of TailwindCSS for Django.
 
 ### Dependencies
 
 1. Core Dependencies:
 
-   - Django==4.2.19
-   - matplotlib==3.10.0
+   - Django==4.2.20
+   - matplotlib==3.9.4
+   - django-htmx==1.22.0
+   - django-hyperscript==1.0.2
+   - django-tailwind==3.6.0
 
 2. Development Tools:
    - djlint==1.36.4
@@ -792,9 +801,6 @@ CREATE TRIGGER update_obligations_timestamp
 
 2. Required Libraries:
    - @picocss/pico==2.0.6
-   - htmx.org==2.0.4
-   - modern-normalize==3.0.1
-   - hyperscrypt.org==0.9.14
 
 ### NPM Configuration
 
@@ -833,7 +839,7 @@ CREATE TRIGGER update_obligations_timestamp
 
 5. **Create the Login Page**:
 
-   - Use Django’s built-in authentication system.
+   - Use Django-allauth authentication system.
    - Create a `LoginView` and customize the template for user-friendly design.
    - Add password reset views and templates.
 
@@ -877,7 +883,7 @@ CREATE TRIGGER update_obligations_timestamp
 
 ### Project Metadata
 2. Django Version:
-   - Django 4.2.19 (exact version)
+   - Django 4.2.20 (exact version)
    - Ensure compatibility with Django 5.1.x features
    - Email: <agallo@enveng-group.com.au>
 ### Project Metadata

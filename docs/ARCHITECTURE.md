@@ -6,7 +6,7 @@ Documentation on the System Architecture of a Django-based environmental obligat
 ## Software Components
 
 ### Backend
-- Django 4.2.19
+- Django 4.2.20
 - SQLite3 Database
 - MatPlotlib for data visualization
 
@@ -112,7 +112,7 @@ aws ec2 run-instances --image-id "ami-0b87a8055f0211d32" \
 ## Security Architecture
 
 ### Authentication
-- Django authentication system with MFA support
+- Django-allauth authentication system with MFA support
 - AWS IAM for infrastructure access
 
 ### Authorization
