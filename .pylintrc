@@ -1,0 +1,15 @@
+[MASTER]
+# Base configuration for all Python files
+load-plugins=
+ignore=migrations,venv,.venv
+
+[FORMAT]
+max-line-length=88
+
+[MESSAGES CONTROL]
+disable=C0111,R0903,C0103
+
+[SIMILARITIES]
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=yes

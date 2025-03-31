@@ -17,19 +17,19 @@ Python is a high-level, interpreted programming language known for its readabili
 ### Installing Python
 
 Official installation guides for various platforms are available at:
-- [Python Installation Guide](https://docs.python.org/release/3.10.16/installing/index.html)
+- [Python Installation Guide](https://docs.python.org/release/3.9.21/installing/index.html)
 
 #### Quick Installation Commands
 
 **Linux (Ubuntu/Debian)**:
 ```bash
 sudo apt update
-sudo apt install python3.10 python3.10-venv python3.10-dev
+sudo apt install python3.9 python3.9-venv python3.9-dev
 ```
 
 **macOS (using Homebrew)**:
 ```bash
-brew install python@3.10
+brew install python@3.9
 ```
 
 **Windows**:
@@ -41,7 +41,7 @@ Always use virtual environments to isolate project dependencies:
 
 ```bash
 # Create a virtual environment
-python3.10 -m venv myenv
+python3.9 -m venv myenv
 
 # Activate the virtual environment
 # On Unix/macOS
@@ -359,16 +359,16 @@ Python comes with a rich standard library that provides modules for various task
 
 ### Official Documentation
 - [Python Official Website](https://www.python.org/)
-- [Python 3.10 Documentation](https://docs.python.org/release/3.10.16/)
-- [What's New in Python 3.10](https://docs.python.org/release/3.10.16/whatsnew/3.10.html)
-- [Python Tutorial](https://docs.python.org/release/3.10.16/tutorial/index.html)
-- [Python Standard Library](https://docs.python.org/release/3.10.16/library/index.html)
-- [Python Language Reference](https://docs.python.org/release/3.10.16/reference/index.html)
-- [Python Setup and Usage](https://docs.python.org/release/3.10.16/using/index.html)
-- [Installing Python Modules](https://docs.python.org/release/3.10.16/installing/index.html)
-- [Distributing Python Modules](https://docs.python.org/release/3.10.16/distributing/index.html)
-- [Extending Python](https://docs.python.org/release/3.10.16/extending/index.html)
-- [Python/C API Reference](https://docs.python.org/release/3.10.16/c-api/index.html)
+- [Python 3.9 Documentation](https://docs.python.org/release/3.9.21/)
+- [What's New in Python 3.9](https://docs.python.org/release/3.9.21/whatsnew/3.9.html)
+- [Python Tutorial](https://docs.python.org/release/3.9.21/tutorial/index.html)
+- [Python Standard Library](https://docs.python.org/release/3.9.21/library/index.html)
+- [Python Language Reference](https://docs.python.org/release/3.9.21/reference/index.html)
+- [Python Setup and Usage](https://docs.python.org/release/3.9.21/using/index.html)
+- [Installing Python Modules](https://docs.python.org/release/3.9.21/installing/index.html)
+- [Distributing Python Modules](https://docs.python.org/release/3.9.21/distributing/index.html)
+- [Extending Python](https://docs.python.org/release/3.9.21/extending/index.html)
+- [Python/C API Reference](https://docs.python.org/release/3.9.21/c-api/index.html)
 
 ### Interactive Learning
 - [Python Tutor](http://pythontutor.com/) - Visualize code execution

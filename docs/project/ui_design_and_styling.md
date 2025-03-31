@@ -156,3 +156,347 @@ Fri x 4
 9 weeks
 all remote
 Friday, April 25, 2025
+
+## CSS Refactoring: Transitioning to SASS and PostCSS in Django
+
+This document outlines a comprehensive plan for refactoring our current CSS structure to utilize SASS and PostCSS, improving our styling workflow while maintaining compatibility with our Django project.
+
+### Current Structure
+
+Our current CSS is organized in a logical directory structure:
+
+```plaintext
+/static/css/
+├── main.css                  # Main entry point
+├── base/                     # Fundamental styles
+├── abstracts/                # Reusable code with no direct output
+├── themes/                   # Theme-specific styles
+├── components/               # Reusable interface components
+├── features/                 # Feature-specific styles
+├── utils/                    # Utility classes
+└── vendor/                   # Third-party CSS
+```
+
+### Benefits of SASS and PostCSS Integration
+
+1. **Enhanced Maintainability**: Variables, mixins, and nesting for cleaner code
+2. **Improved Performance**: Optimized and minified output via PostCSS
+3. **Future-Proof CSS**: Use modern features with automatic browser compatibility
+4. **Better Development Experience**: Live reloading, error reporting, and modular imports
+
+### Implementation Plan
+
+#### 1. Setup and Installation
+
+```bash
+# Create package.json if not exists
+npm init -y
+
+# Install core dependencies
+npm install --save-dev sass postcss postcss-cli autoprefixer cssnano postcss-preset-env
+
+# Install additional useful PostCSS plugins
+npm install --save-dev postcss-import postcss-mixins postcss-nested postcss-custom-properties
+
+# Optional development tools
+npm install --save-dev npm-run-all onchange
+```
+
+#### 2. File Structure Conversion
+
+Convert the existing CSS directory structure to accommodate SASS:
+
+```plaintext
+/static/
+├── scss/                      # Source SASS files
+│   ├── main.scss              # Main entry point
+│   ├── base/
+│   │   ├── _reset.scss        # Underscore prefix for partials
+│   │   ├── _typography.scss
+│   │   ├── _layout.scss
+│   │   └── _accessibility.scss
+│   ├── abstracts/
+│   │   ├── _variables.scss
+│   │   ├── _mixins.scss
+│   │   └── _functions.scss
+│   ├── themes/
+│   │   ├── _theme-variables.scss
+│   │   ├── _light.scss
+│   │   └── _dark.scss
+│   ├── components/            # Component styles with .scss extension
+│   ├── features/              # Feature-specific styles
+│   ├── utils/                 # Utility classes
+│   └── vendor/                # Third-party styles
+├── css/                       # Compiled output directory
+│   └── main.css               # Final compiled and optimized CSS
+```
+
+#### 3. Configuration Files
+
+**PostCSS Configuration**:
+```js
+// postcss.config.js
+module.exports = {
+  plugins: [
+    // Process @import statements
+    require('postcss-import'),
+    
+    // Enable custom mixins and nesting (similar to SASS)
+    require('postcss-mixins'),
+    require('postcss-nested'),
+    
+    // Process CSS variables
+    require('postcss-custom-properties'),
+    
+    // Use modern CSS features with browser compatibility
+    require('postcss-preset-env')({
+      stage: 1,
+      browsers: ['> 1%', 'last 2 versions', 'not dead']
+    }),
+    
+    // Add vendor prefixes
+    require('autoprefixer'),
+    
+    // Minify CSS for production only
+    process.env.NODE_ENV === 'production' 
+      ? require('cssnano')({ preset: 'default' }) 
+      : null
+  ].filter(Boolean) // Remove null plugins
+};
+```
+
+**NPM Scripts**:
+```json
+"scripts": {
+  "sass": "sass --no-source-map static/scss/main.scss:static/css/.temp/main.css",
+  "postcss": "postcss static/css/.temp/main.css -o static/css/main.css",
+  "build": "npm run sass && npm run postcss",
+  "watch": "npm-run-all --parallel watch:*",
+  "watch:sass": "sass --watch static/scss/main.scss:static/css/.temp/main.css",
+  "watch:postcss": "onchange 'static/css/.temp/*.css' -- npm run postcss"
+}
+```
+
+#### 4. Main SASS Entry File
+
+Create a main.scss file that imports all partials:
+
+```scss
+// Base
+@import 'base/reset';
+@import 'base/typography';
+@import 'base/layout';
+@import 'base/accessibility';
+
+// Abstracts
+@import 'abstracts/variables';
+@import 'abstracts/mixins';
+@import 'abstracts/functions';
+
+// Themes
+@import 'themes/theme-variables';
+@import 'themes/light';
+@import 'themes/dark';
+
+// Components - import all component partials
+@import 'components/buttons/base';
+@import 'components/buttons/primary';
+@import 'components/buttons/action';
+// Other component imports
+
+// Features
+@import 'features/obligations/index';
+@import 'features/user-profile/index';
+@import 'features/company/index';
+
+// Utils
+@import 'utils/spacing';
+@import 'utils/display';
+@import 'utils/colors';
+
+// Vendor - For non-NPM vendor files
+@import 'vendor/pico/pico-classless';
+```
+
+#### 5. Django Integration
+
+**Django Settings Configuration**:
+```python
+# settings.py
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, 'static'),
+]
+
+# For production
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+```
+
+**Custom Django Management Command**:
+```python
+# yourapp/management/commands/build_sass.py
+from django.core.management.base import BaseCommand
+import subprocess
+import os
+
+class Command(BaseCommand):
+    help = 'Build SASS files to CSS with PostCSS processing'
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--production',
+            action='store_true',
+            help='Build for production environment',
+        )
+
+    def handle(self, *args, **options):
+        self.stdout.write('Building frontend assets...')
+        
+        env = os.environ.copy()
+        if options['production']:
+            env['NODE_ENV'] = 'production'
+        
+        subprocess.run(['npm', 'run', 'build'], env=env, check=True)
+        self.stdout.write(self.style.SUCCESS('CSS build complete!'))
+```
+
+### Leveraging SASS Features
+
+#### Variables and Custom Properties
+
+```scss
+// abstracts/_variables.scss
+$spacing-base: 0.5rem;
+$spacing-small: $spacing-base * 0.5;
+$spacing-large: $spacing-base * 1.5;
+
+:root {
+  --greenova-spacing: #{$spacing-base};
+  --greenova-spacing-small: #{$spacing-small};
+  --greenova-spacing-large: #{$spacing-large};
+}
+```
+
+#### Mixins for Responsive Design
+
+```scss
+// abstracts/_mixins.scss
+@mixin respond-to($breakpoint) {
+  @if $breakpoint == "small" {
+    @media (max-width: 576px) { @content; }
+  } @else if $breakpoint == "medium" {
+    @media (max-width: 768px) { @content; }
+  } @else if $breakpoint == "large" {
+    @media (max-width: 992px) { @content; }
+  } @else if $breakpoint == "xlarge" {
+    @media (max-width: 1200px) { @content; }
+  }
+}
+
+// Usage
+.card-container {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  
+  @include respond-to(medium) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  @include respond-to(small) {
+    grid-template-columns: 1fr;
+  }
+}
+```
+
+#### Component Example with SASS Features
+
+```scss
+// components/buttons/_base.scss
+@mixin button-base {
+  font-size: var(--greenova-button-size);
+  font-weight: bold;
+  min-height: 41px;
+  border-radius: var(--greenova-border-radius);
+  padding: var(--greenova-padding);
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: var(--greenova-green-tertiary);
+    border-color: var(--greenova-green-tertiary);
+  }
+}
+
+button,
+[type='submit'],
+[type='reset'],
+.btn-primary,
+.btn-secondary,
+.btn-danger,
+.action-btn {
+  @include button-base;
+}
+```
+
+### Leveraging PostCSS Features
+
+#### Using PostCSS Nesting
+
+```css
+/* For components that don't need SASS complexity */
+.data-card {
+  padding: var(--spacing-medium);
+  
+  /* Nesting via PostCSS */
+  & .card-header {
+    border-bottom: 1px solid var(--border-color);
+    
+    & h3 {
+      margin-bottom: 0;
+    }
+  }
+}
+```
+
+#### Using Modern CSS Features via PostCSS
+
+```css
+/* Using logical properties (handled by postcss-preset-env) */
+.section {
+  margin-inline: auto;
+  padding-block: var(--spacing-large);
+}
+
+/* Using focus-visible for better keyboard navigation */
+.button:focus-visible {
+  outline: 2px solid var(--greenova-focus-color);
+  outline-offset: 2px;
+}
+```
+
+### Migration Strategy
+
+1. **Incremental Approach**:
+   - Start by converting one component category (e.g., buttons)
+   - Test thoroughly before moving to the next component
+   - Maintain backward compatibility during transition
+
+2. **Create a Base Foundation**:
+   - Set up variables and mixins first
+   - Convert global styles next
+   - Then move to specific components
+
+3. **Documentation**:
+   - Document conversion decisions
+   - Create style guides for new components
+   - Update team documentation
+
+4. **Integration with Build Process**:
+   - Add to CI/CD pipeline
+   - Include in deployment workflow
+   - Ensure both development and production builds work
+
+### Resources
+
+- [SASS Documentation](https://sass-lang.com)
+- [PostCSS Documentation](https://postcss.org)
+- [Django Static Files](https://docs.djangoproject.com/en/stable/howto/static-files/)

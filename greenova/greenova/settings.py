@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import Dict, List, TypedDict, Union
 from django.contrib import admin
 import mimetypes
-from dotenv import load_dotenv
+import sentry_sdk
+from dotenv_vault import load_dotenv
 load_dotenv()
 
 
@@ -113,37 +114,49 @@ INTERNAL_IPS = [
 # Application definition
 
 INSTALLED_APPS = [
+    # Core Django apps (must be first)
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "core.apps.CoreConfig",
+    "django.contrib.humanize",
+
+    # Third-party authentication (keep together)
     "allauth",
     "allauth.account",
     "allauth.socialaccount",
-    'allauth.socialaccount.providers.github',
+    "allauth.socialaccount.providers.github",
     "allauth.usersessions",
-    "landing",
     "allauth.mfa",
-    "dashboard",
-    "projects",
-    "obligations",
-    "chatbot",
-    "mechanisms",
-    "procedures",
-    "responsibility",
+
+    # Other third-party libraries
     "django_htmx",
     "django_hyperscript",
     "django_matplotlib",
     "template_partials",
     "tailwind",
-    "theme",  # Make sure this is present
     "django_browser_reload",
     "debug_toolbar",
-    "django.contrib.humanize",
+    "gunicorn",
+    "pb_model",
+
+    # Your local apps (ordered by dependency)
+    "core.apps.CoreConfig",  # Core logic, should be initialized early
+    "company",  # Base models (used in other apps, so placed first)
+    "projects",  # Likely depends on `company`
+    "users",  # User management, might depend on `company`
+    "mechanisms",  # Business logic modules
+    "responsibility",  # Likely domain-specific
+    "obligations",  # Related to `responsibility`
+    "procedures",  # Depends on `obligations`
+    "dashboard",  # UI and analytics
+    "landing",  # Landing page or homepage
+    "theme",  # UI Styling
+    "chatbot",  # Standalone feature, placed last
 ]
+
 
 # Django-Matplotlib configuration
 DJANGO_MATPLOTLIB_TMP = 'matplotlib_tmp'
@@ -169,8 +182,8 @@ MIDDLEWARE = [
     'django_htmx.middleware.HtmxMiddleware',
     'django_browser_reload.middleware.BrowserReloadMiddleware',
     'allauth.account.middleware.AccountMiddleware',
-    #'allauth.usersessions.middleware.UserSessionMiddleware',
-    ]
+    # 'allauth.usersessions.middleware.UserSessionMiddleware',
+]
 
 # Authentication settings
 AUTHENTICATION_BACKENDS = [
@@ -181,12 +194,12 @@ AUTHENTICATION_BACKENDS = [
     'allauth.account.auth_backends.AuthenticationBackend',
 ]
 
-LOGIN_REDIRECT_URL = "dashboard:home" # OR LOGIN_REDIRECT_URL = "dashboard:profile"
-#LOGOUT_REDIRECT_URL = "landing:home"
+LOGIN_REDIRECT_URL = "dashboard:home"  # OR LOGIN_REDIRECT_URL = "dashboard:profile"
+# LOGOUT_REDIRECT_URL = "landing:home"
 LOGIN_URL = "authentication:login"
-#LOGIN_REDIRECT_URL = "admin:index"
-#LOGOUT_REDIRECT_URL = "admin:login"
-#LOGIN_URL = "admin:login"
+# LOGIN_REDIRECT_URL = "admin:index"
+# LOGOUT_REDIRECT_URL = "admin:login"
+# LOGIN_URL = "admin:login"
 SOCIALACCOUNT_PROVIDERS = {
     'github': {
         'SCOPE': [
@@ -210,7 +223,7 @@ TEMPLATES: List[TemplateConfig] = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
         "DIRS": [
-            BASE_DIR / "authentication", # route to custom django-allauth template!
+            BASE_DIR / "authentication",  # route to custom django-allauth template!
             BASE_DIR / "templates",
         ],
         "APP_DIRS": True,  # Keep this for app template discovery
@@ -241,10 +254,10 @@ DATABASES: Dict[str, DatabaseConfig] = {
 AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator", },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    "OPTIONS": {
-            "min_length": 9,
-        },
-    },
+     "OPTIONS": {
+         "min_length": 9,
+     },
+     },
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator", },
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator", },]
 
@@ -279,7 +292,7 @@ STATICFILES_FINDERS = [
 STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'  # Basic storage without manifest
 
 # Application version
-APP_VERSION = "0.0.3"
+APP_VERSION = "0.0.4"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
@@ -291,8 +304,8 @@ SECURE_CONTENT_TYPE_NOSNIFF = False
 X_FRAME_OPTIONS = 'SAMEORIGIN'  # Allow frames for development tools
 CSRF_COOKIE_SECURE = False
 SESSION_COOKIE_SECURE = False
-SECURE_SSL_REDIRECT = False
-SECURE_PROXY_SSL_HEADER = None
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+SECURE_SSL_REDIRECT = True
 
 # Simplify cache to basic memory cache
 CACHES = {
@@ -386,3 +399,13 @@ mimetypes.add_type("text/plain", ".txt", True)
 
 # User sessions configuration
 # USERSESSIONS_TRACK_ACTIVITY = True
+
+TEST_RUNNER = 'django.test.runner.DiscoverRunner'
+
+# Sentry.io configuration
+sentry_sdk.init(
+    dsn="https://c6f88e890b90e554dcf731d6c4358341@o4508301862371328.ingest.us.sentry.io/4509008399761408",
+    # Add data like request headers and IP for users,
+    # see https://docs.sentry.io/platforms/python/data-management/data-collected/ for more info
+    send_default_pii=True,
+)

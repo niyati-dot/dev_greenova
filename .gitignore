@@ -65,15 +65,15 @@ node_modules/
 package-lock.json
 pnpm-lock.yaml
 yarn.lock
-.eslintrc.cjs
-.npmrc
+#.eslintrc.cjs
+#.npmrc
 
 # IDE/Editor
 .idea/
-.vscode/
+#.vscode/
 *.sublime-workspace
 *.sublime-project
-.editorconfig
+#.editorconfig
 
 # Environment
 .env
@@ -88,8 +88,12 @@ yarn.lock
 !.env.example
 !.env.vault.example
 .env.keys
+!.envrc
 
 .env*
 .flaskenv*
 !.env.project
 !.env.vault
+.venvmake/
+*.bak
+None

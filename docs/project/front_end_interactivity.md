@@ -133,3 +133,197 @@ jared
 Wednesday and Thursday 10am to 2pm
 
 give or take last week of May 23rd 
+
+<@358385377645428737> here is more context with modularising javascript and transitioning to Typescript:
+
+JavaScript/TypeScript Directory Structure Recommendations for Django
+Based on reviewing your JavaScript files, here's a recommended structure to make your scripts more modular and easier to maintain, along with guidance for transitioning to TypeScript.
+
+Recommended Directory Structure
+```plaintext
+/static/js/
+├── main.js                    # Main entry point that imports and initializes all modules
+├── core/                      # Core application functionality
+│   ├── config.js              # Configuration parameters and constants
+│   ├── events.js              # Global event handling
+│   ├── utils.js               # Common utility functions
+│   └── api.js                 # API interaction helpers
+│
+├── components/                # Reusable UI components
+│   ├── charts/                # Chart-related functionality
+│   │   ├── chart-scroll.js    # Chart scrolling implementation
+│   │   └── chart-loader.js    # Chart initialization and data handling
+│   ├── tables/                # Table handling
+│   │   ├── table-scroll.js    # Table scrolling functionality
+│   │   └── table-export.js    # Table export features
+│   ├── navigation.js          # Navigation functionality
+│   ├── theme-switcher.js      # Theme switching functionality
+│   ├── form-handlers.js       # Form submission and validation
+│   └── modals.js              # Modal dialog functionality
+│
+├── features/                  # Feature-specific code
+│   ├── obligations/           # Obligation-specific functionality
+│   │   ├── index.js           # Main obligations module
+│   │   ├── filters.js         # Obligation filtering
+│   │   └── status-updates.js  # Obligation status functionality
+│   ├── projects/              # Project-related functionality
+│   │   ├── index.js           # Main project module
+│   │   └── selector.js        # Project selection
+│   └── user-profile/          # User profile functionality
+│
+├── lib/                       # Internal libraries and wrappers
+│   ├── htmx-wrapper.js        # HTMX integration helpers
+│   └── hyperscript-helpers.js # Hyperscript integration helpers
+│
+├── vendor/                    # Third-party libraries
+│   ├── htmx/                  # HTMX library and extensions
+│   │   ├── htmx.min.js
+│   │   └── ext/               # HTMX extensions
+│   │       ├── path-deps.min.js
+│   │       ├── loading-states.min.js
+│   │       ├── head-support.min.js
+│   │       └── class-tools.min.js
+│   └── hyperscript/           # Hyperscript library
+│       └── _hyperscript.min.js
+│
+└── types/                     # TypeScript type definitions (for TS transition)
+    ├── global.d.ts            # Global type definitions
+    ├── htmx.d.ts              # Type definitions for HTMX
+    └── hyperscript.d.ts       # Type definitions for Hyperscript
+```
+Key Benefits of This Structure
+Improved Separation of Concerns:
+
+Core application logic separated from UI components
+Feature-specific code isolated in its own directory
+Clear boundaries between application code and vendor scripts
+Better Maintainability:
+
+Smaller, more focused files
+Logical grouping of related functionality
+Easier to locate and modify specific features
+Simplified Dependency Management:
+
+Clear import paths
+Centralized vendor script management
+Better control over script loading order
+Enhanced Team Collaboration:
+
+Multiple developers can work on different components without conflicts
+Clear ownership of code modules
+Consistent structure across the project
+TypeScript Migration Guidance
+1. Initial Setup
+Add TypeScript to your Django project:
+```bash
+# Install TypeScript and types for libraries
+npm install --save-dev typescript @types/node
+# For your libraries (if available)
+npm install --save-dev @types/htmx
+```
+Create a tsconfig.json at project root:
+```json
+{
+  "compilerOptions": {
+    "target": "ES2015",
+    "module": "ES2015",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "strict": true,
+    "outDir": "./greenova/static/js/dist",
+    "rootDir": "./typescript",
+    "sourceMap": true,
+    "declaration": false,
+    "baseUrl": "./",
+    "paths": {
+      "@core/*": ["typescript/core/*"],
+      "@components/*": ["typescript/components/*"],
+      "@features/*": ["typescript/features/*"],
+      "@lib/*": ["typescript/lib/*"]
+    }
+  },
+  "include": ["typescript/**/*.ts"],
+  "exclude": ["node_modules"]
+}
+```
+2. Phased Migration Strategy
+Setup TypeScript Source Directory:
+
+Create a /typescript directory at project root with the same structure as /static/js/
+Configure Django to serve compiled JavaScript from /static/js/dist/
+Start with Type Definitions:
+
+Create type definitions for existing JavaScript modules
+Add TypeScript interfaces for your data structures and API responses
+Incremental Module Migration:
+
+Start with independent utilities and smaller components
+Rename .js files to .ts files and add type annotations
+Address TypeScript errors as they appear
+Implement proper interfaces for function parameters and return types
+Configure Build Process:
+
+Add npm scripts for TypeScript compilation
+Set up watch mode for development
+Add integration with Django's static file collection
+3. Django Integration
+Update your Django templates to include the compiled JavaScript:
+```html
+{% load static %}
+<script src="{% static 'js/dist/main.js' %}"></script>
+```
+Set up a build script in package.json:
+```json
+{
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch",
+    "prebuild": "rimraf ./greenova/static/js/dist",
+    "django-collect": "npm run build && python manage.py collectstatic --noinput"
+  }
+}
+```
+4. Webpack Integration (Optional)
+For a more robust build system, consider adding Webpack:
+```sh
+npm install --save-dev webpack webpack-cli ts-loader 
+```
+Create a webpack.config.js:
+```js
+const path = require('path');
+
+module.exports = {
+  entry: './typescript/main.ts',
+  module: {
+    rules: [
+      {
+        test: /\.tsx?$/,
+        use: 'ts-loader',
+        exclude: /node_modules/,
+      },
+    ],
+  },
+  resolve: {
+    extensions: ['.tsx', '.ts', '.js'],
+    alias: {
+      '@core': path.resolve(__dirname, 'typescript/core/'),
+      '@components': path.resolve(__dirname, 'typescript/components/'),
+      '@features': path.resolve(__dirname, 'typescript/features/'),
+      '@lib': path.resolve(__dirname, 'typescript/lib/')
+    }
+  },
+  output: {
+    filename: 'bundle.js',
+    path: path.resolve(__dirname, 'greenova/static/js/dist'),
+  },
+};
+```
+5. Tips for TypeScript Migration
+Start with strict mode disabled and gradually enable it as codebase matures
+Create proper interfaces for your Django API responses
+Use enums for constants that are currently defined as strings
+Add event typing for all event handlers
+Create utility types for common patterns in your application
+Document public APIs with JSDoc comments for better IDE support
+This structure and migration plan will help organize your JavaScript code better while providing a clear path to TypeScript adoption, improving maintainability and type safety in your Django project.
+

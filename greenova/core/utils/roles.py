@@ -52,6 +52,40 @@ ROLE_DISPLAY_NAMES: Dict[str, str] = {
     ProjectRole.VIEWER.value: 'Viewer',
 }
 
+# Define role colors for UI styling
+ROLE_COLORS: Dict[str, str] = {
+    ProjectRole.PERDAMAN_MANAGEMENT.value: 'primary',
+    ProjectRole.PERDAMAN_ENV_HERITAGE_MANAGER.value: 'primary',
+    ProjectRole.SCJV_PROJECT_DIRECTOR.value: 'success',
+    ProjectRole.SCJV_PROJECT_MANAGER.value: 'success',
+    ProjectRole.SCJV_CONSTRUCTION_MANAGER.value: 'info',
+    ProjectRole.SCJV_COMMERCIAL_MANAGER.value: 'info',
+    ProjectRole.SCJV_ENGINEERING_MANAGER.value: 'info',
+    ProjectRole.SCJV_ENVIRONMENTAL_LEAD.value: 'warning',
+    ProjectRole.SCJV_HSSE_MANAGER.value: 'warning',
+    ProjectRole.SCJV_HERITAGE_INDIGENOUS_MANAGER.value: 'warning',
+    ProjectRole.SCJV_LEAD_ENV_ADVISOR.value: 'danger',
+    ProjectRole.SCJV_SENIOR_ENV_ADVISOR.value: 'danger',
+    ProjectRole.SCJV_CONSTRUCTION_DIRECTOR.value: 'success',
+    ProjectRole.SCJV_PROJECT_ENV_REPRESENTATIVE.value: 'warning',
+    ProjectRole.SCJV_CONSTRUCTION_SUPERVISOR.value: 'info',
+    ProjectRole.SCJV_COMMUNITY_STAKEHOLDER.value: 'info',
+
+    # Original roles
+    ProjectRole.OWNER.value: 'success',
+    ProjectRole.MANAGER.value: 'primary',
+    ProjectRole.MEMBER.value: 'info',
+    ProjectRole.VIEWER.value: 'default',
+}
+
+def get_role_display(role_value: str) -> str:
+    """Get the display name for a role value."""
+    return ROLE_DISPLAY_NAMES.get(role_value, role_value.title())
+
+def get_role_color(role_value: str) -> str:
+    """Get the display color for a role value."""
+    return ROLE_COLORS.get(role_value, "default")
+
 def get_role_choices() -> List[Tuple[str, str]]:
     """
     Get choices for model field with human-readable display names.
