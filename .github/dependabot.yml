@@ -16,9 +16,6 @@ updates:
   - package-ecosystem: 'npm'
     directory: '/'
     schedule:
-      interval: quarterly
-
-  # Enable version updates for python
   - package-ecosystem: 'python'
     directory: '/'
     schedule:

@@ -10,27 +10,10 @@ tracking environmental obligations and compliance requirements.
 We use Python 3.9.21 with Django 4.1.13 for backend development.
 
 Our frontend uses PicoCSS as the primary CSS framework. Only use Tailwind CSS
-for specialized UI components when PicoCSS cannot handle the requirements.
 
 We implement frontend interactivity with django-hyperscript for simple
 interactions and django-htmx for more complex AJAX functionality. Custom
 JavaScript is only used as a last resort.
-
-We use matplotlib for server-side data visualization.
-
-Our database is SQLite3 in development.
-
-We deploy using Docker containers.
-
-## Development Practices
-
-We follow an HTML-first approach with progressive enhancement, starting with
-semantic and accessible HTML.
-
-We prioritize WCAG 2.1 AA standards for accessibility in all interfaces.
-
-We use test-driven development with Django's testing framework. All models,
-forms, and views should have corresponding unit tests.
 
 We follow PEP 8 style guidelines with a strict maximum line length of 88
 characters for all Python files.

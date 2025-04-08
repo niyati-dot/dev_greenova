@@ -116,7 +116,6 @@ def site_version():
     """Return the current site version."""
     return getattr(settings, 'APP_VERSION', 'dev')
 
-
 @register.inclusion_tag('core/components/main_navigation.html', takes_context=True)
 def main_navigation(context):
     """Render the main navigation menu."""
@@ -128,14 +127,12 @@ def main_navigation(context):
         'current_namespace': current_namespace,
     }
 
-
 @register.filter
 def user_role_in_project(project, user):
     """Get user's role in a project."""
     if hasattr(project, 'get_user_role'):
         return project.get_user_role(user)
     return None
-
 
 @register.simple_tag(takes_context=True)
 def base_url(context):
