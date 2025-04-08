@@ -1,11 +1,7 @@
-import base64
-import io
 import logging
 
 import matplotlib
-import matplotlib.pyplot as plt
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_control
 from django.views.decorators.vary import vary_on_headers
@@ -20,7 +16,7 @@ matplotlib.use('Agg')  # Use Agg backend for non-interactive plotting
 logger = logging.getLogger(__name__)
 
 @method_decorator(cache_control(max_age=300), name='dispatch')
-@method_decorator(vary_on_headers("HX-Request"), name='dispatch')
+@method_decorator(vary_on_headers('HX-Request'), name='dispatch')
 class MechanismChartView(LoginRequiredMixin, TemplateView):
     template_name = 'mechanisms/mechanism_charts.html'
 
@@ -29,7 +25,16 @@ class MechanismChartView(LoginRequiredMixin, TemplateView):
         project_id = self.request.GET.get('project_id')
 
         if not project_id:
-            context['error'] = "No project selected"
+            context['error'] = 'No project selected'
+            return context
+
+        try:
+            project_id = int(project_id)
+            if project_id < 1:
+                context['error'] = 'No project selected'
+                return context
+        except (TypeError, ValueError):
+            context['error'] = 'Invalid project ID'
             return context
 
         try:
@@ -77,9 +82,9 @@ class MechanismChartView(LoginRequiredMixin, TemplateView):
             ]
 
         except Project.DoesNotExist:
-            context['error'] = f"Project with ID {project_id} not found"
+            context['error'] = f'Project with ID {project_id} not found'
         except Exception as e:
-            logger.error(f"Error generating mechanism charts: {str(e)}")
-            context['error'] = f"Error generating charts: {str(e)}"
+            logger.error(f'Error generating mechanism charts: {str(e)}')
+            context['error'] = f'Error generating charts: {str(e)}'
 
         return context
