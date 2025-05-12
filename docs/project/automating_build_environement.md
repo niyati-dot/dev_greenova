@@ -138,11 +138,6 @@ install: venv
  @echo "Installing dependencies..."
  $(VENV_DIR)/bin/$(PIP) install -r $(REQUIREMENTS)
 
-# Lint the code
-lint:
- @echo "Linting the code..."
- $(VENV_DIR)/bin/flake8 $(SRC_DIR) $(TEST_DIR)
-
 # Run tests
 test:
  @echo "Running tests..."

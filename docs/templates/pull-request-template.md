@@ -1,111 +1,113 @@
-# Pull Request Template
+# Pull Request: Release v0.0.6
 
-## Title
+## Purpose
 
-`release(v0.0.5): comprehensive platform enhancements and new features`
+Deliver pre-release v0.0.6, integrating multiple feature branches and
+infrastructure improvements across the Greenova platform. This release focuses
+on company management, authentication enhancements, improved development
+workflows, and better data management tooling for environmental compliance
+tracking.
 
-## Description
+## Changes
 
-### Purpose
+### Added
 
-Pre-release v0.0.5 integrating multiple feature branches and improvements
-across the Greenova platform. This release enhances development infrastructure,
-user experience, testing capabilities, and adds new functional modules for
-company management and user profiles.
+- **Company Management Module**: Introduced company management with user
+  relationships and mixins for company-scoped views.
+- **Auditing Module**: Implemented history tracking for key operations.
+- **Authentication Framework**: Configured `LOGIN_URL` to use authentication
+  namespace. Enhanced multi-factor authentication support.
+- **Obligation Management**: Improved obligation list templates and interactive
+  hyperlinks for status counts.
+- **Development Environment**: Enhanced virtual environment setup with
+  `post_start.sh`. Added detailed `.devcontainer/README.md` and new entrypoint
+  script.
+- **Documentation**: Added and updated markdown files for configuration, code
+  style, and devcontainer setup.
 
-### Changes
+### Changed
 
-#### Development Infrastructure
+- **Frontend Refactor**: Comprehensive overhaul of landing page, static assets,
+  and template structure. Migrated SCSS to modular CSS and consolidated style
+  variables.
+- **Backend Improvements**: Refactored company and authentication models for
+  clarity and maintainability. Improved progress reporting and logging in data
+  import processes.
+- **Build System**: Refactored `post_start.sh` for maintainability. Updated
+  static TypeScript build artifacts and settings.
+- **Environment Configuration**: Migrated to dotenv-vault for secure
+  environment management. Enhanced `.envrc` and `.env.example` for better
+  variable management.
+- **User Experience**: Enhanced user profile functionality with role
+  relationship display. Streamlined migrations and improved dashboard widgets.
 
-- Updated development tooling with enhanced pre-commit hooks and custom pylint
-  extensions.
-- Configured mypy with django-stubs for better type checking.
-- Standardized editor configuration and VSCode settings.
-- Improved devcontainer configuration with Snyk CLI and Git features.
-- Integrated Sentry for error tracking.
-- Added direnv support for environment variable management.
-- Configured Prettier for consistent code formatting.
-- Migrated to dotenv-vault for environment management.
+### Removed
 
-#### UI/UX Improvements
+- **Legacy Bandit Files**: Deleted `.bandit`, `.banditignore`, and `.banditrc`
+  security config files.
+- **Obsolete Scripts and Static Assets**: Removed outdated test/config files
+  and redundant static resources.
 
-- Enhanced landing page with mission statement and key features sections.
-- Implemented theme switching functionality with WCAG 2.1 AA compliance.
-- Refined dashboard interface, navigation, and component organization.
-- Added responsive layouts and improved semantic HTML structure.
-- Optimized chart generation with centralized logic in `figures.py`.
-- Reorganized CSS directory structure for better organization.
-- Enhanced breadcrumb component with better styling and accessibility.
+### Fixed
 
-#### New Features
+- **Authentication**: Resolved company creation authentication test issues.
+  Fixed login redirect and obligation import bugs.
+- **Formatting and Configuration**: Addressed formatting issues in Copilot
+  prompt and profiler conflict resolution. Improved error handling in
+  obligation import process.
 
-- **Company Management Module**
-  - Company models, views, and templates.
-  - Document management capabilities.
-  - Member role management.
-  - Navigation integration.
-  - CSS styling for company components.
-- **User Profile Functionality**
-  - Complete user profile management.
-  - Password change capability.
-  - Admin interfaces for user management.
-- **Chatbot Development**
-  - Implemented chatbot conversation management.
-  - Added chatbot message styles and variables.
-  - Chatbot serialization and protocol buffer support.
+### Security
 
-#### Testing and Quality
+- **Environment and Authentication**: Improved environment variable validation
+  and management. Enhanced authentication and security settings in systemd and
+  Django configs.
 
-- Integrated pytest framework with comprehensive test coverage across all apps.
-- Added new test files for authentication, chatbot, company, core, and other
-  modules.
-- Refactored code structure to improve testability.
-- Implemented ESLint for JavaScript.
-- Added djlint for Django HTML templates.
-- Configured autopep8 for Python formatting.
+## Related Issues
 
-#### Documentation
+- Fixes #72 - Authentication namespace implementation
+- Fixes #87 - Company management module
+- Fixes #88 - Obligation import improvements
+- Fixes #37 - Auditing module implementation
 
-- Restructured `docs/resources` with logical subdirectories.
-- Added commit message templates, code review templates, and GitHub issue
-  templates.
-- Updated environment configuration documentation and technical guides.
-- Added GitHub CLI usage instructions.
-- Included changelog references.
-- Enhanced front-end interactivity documentation.
-- Added comprehensive Makefile comments.
+## Testing Performed
 
-#### Dependencies
+- Comprehensive test suite execution with pytest
+- Verified proper authentication flow with login redirects
+- Tested company management features with multi-company scenarios
+- Validated obligation import process with error handling
+- Verified audit record creation and management
+- Tested integration between company and obligation models
+- Validated development environment configuration
+- Unit tests for models, views, and middleware
+- Verified CRUD operations and access control
+- Tested SCSS compilation and template rendering
+- Manual testing of user profile and dashboard features
+- Ensured all changes pass pre-commit checks (linting, formatting,
+  type-checking, security)
 
-- Updated packages for compatibility with Python 3.9.21 and Django 4.1.13.
-- Downgraded matplotlib version for compatibility.
-- Revised environment variable configurations in `.env.vault`.
-- Included pre-commit dependency in `requirements.txt`.
+## Screenshots
 
-### Related Issues
+<!-- Attach before/after screenshots of UI changes if available -->
 
-- Closes #33, #41
+## Deployment Notes
 
-### Testing Performed
+- Contains database migrations for company model and auditing module
+- Requires updated environment variables via `.env.vault`
+- Updated dependency requirements in requirements.txt
+- Includes infrastructure changes for development workflow
+- Requires updating static files and running `collectstatic`
+- Ensure `.env.vault` changes are propagated to all environments before
+  deployment
+- Verify CI workflows function as expected post-merge
 
-- Comprehensive test suite execution with pytest.
-- Manual testing of new company management features.
-- User profile functionality verification.
-- Chatbot interaction testing.
-- Theme switching and accessibility compliance validation.
-- Cross-browser compatibility testing.
+## Additional Context
 
-### Deployment Notes
-
-- Contains multiple database migrations.
-- Requires updated environment variables via `.env.vault`.
-- Updated dependency requirements need to be installed.
-- Sentry integration requires configuration of Sentry DSN.
-
-### Contributors
-
-- [agallo](https://github.com/enveng-group)
-- [JaredStanbrook](https://github.com/JaredStanbrook)
-- [cameronsims](https://github.com/cameronsims)
-- [Channing88](https://github.com/Channing88)
-- [muhammadhaseebahmad](https://github.com/mhahmad0)
+- Refactored project structure for maintainability and scalability
+- Improved accessibility and semantic HTML in templates
+- Enhanced developer experience with updated scripts and documentation
+- Contributors: [agallo](https://github.com/enveng-group),
+  [JaredStanbrook](https://github.com/JaredStanbrook),
+  [mhahmad0](https://github.com/mhahmad0),
+  [Channing88](https://github.com/Channing88),
+  [camersonsims](https://github.com/camersonsims),
+  [alexcao123456](https://github.com/alexcao123456)

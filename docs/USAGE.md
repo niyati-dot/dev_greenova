@@ -16,7 +16,11 @@
 
 ## Features
 
-[Feature documentation to be added]
+```python
+# Corrected missing fenced code block language
+from greenova import manage
+manage.run()
+```
 
 ## Best Practices
 

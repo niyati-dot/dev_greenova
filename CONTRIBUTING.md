@@ -18,6 +18,7 @@ and effective.
   - [Fork-Based Contribution](#fork-based-contribution)
   - [Git Workflow for Direct Contributors](#git-workflow-for-direct-contributors)
   - [Branch Strategy](#branch-strategy)
+  - [Merge, Release, and Tagging Process](#merge-release-and-tagging-process)
   - [Commit Message Guidelines](#commit-message-guidelines)
 - [Pull Request Process](#pull-request-process)
   - [Pull Request Checklist](#pull-request-checklist)
@@ -47,9 +48,9 @@ feels welcome to contribute.
 
 1. **Prerequisites**:
 
-   - Python 3.9.21
-   - Node.js 18.20.7
-   - NPM 10.8.2
+   - Python 3.12.9
+   - Node.js 20.19.1
+   - NPM 11.3.0
    - Git
 
 2. **Clone the repository** (if you're a direct contributor) or fork it first
@@ -235,8 +236,55 @@ For direct contributors:
 ### Branch Strategy
 
 - Use `main` for production-ready code
-- Use `pre-release` branches for upcoming releases
+- Use `pre-release` branches for upcoming releases (e.g.,
+  `integration/[version]`)
 - Use feature branches for new features or bug fixes
+
+---
+
+### Merge, Release, and Tagging Process
+
+For each new release, follow a structured merge and release process. Always
+consult the latest, detailed instructions in
+`docs/resources/git/merge-instructions.txt` for up-to-date, release-specific
+steps and best practices. The following is a generic summary:
+
+1. **Repository Health Check**: Ensure your working directory is clean and up
+   to date. Run repository health and optimization steps as described in the
+   merge instructions.
+
+2. **Changelog Preparation**: Update `CHANGELOG.md` to summarize all changes
+   between `[previous release]` and `[current release]`.
+
+3. **Branching**: Create or update an integration branch (e.g.,
+   `integration/[version]`) from the latest staging or pre-release branch.
+
+4. **Merging**: Merge feature branches and pull requests into the integration
+   branch in a safe, logical order. Resolve conflicts according to project
+   standards. Use placeholders for PR numbers and branch names (e.g.,
+   `feature/[feature-name]`).
+
+5. **Testing**: After each merge, run the full test suite and code quality
+   checks. See the Testing Requirements section.
+
+6. **Final Merge**: Merge the integration branch into `staging`, then into
+   `main` (or the production branch). Resolve any remaining conflicts.
+
+7. **Tagging and Release**: Tag the new release as `[version]` (e.g.,
+   `v[version]`). Push the tag to the remote repository. Draft a new release in
+   GitHub Releases, using the new tag and including release notes.
+
+8. **Post-Release Maintenance**: Clean up merged branches, optimize the
+   repository, and verify database integrity.
+
+**Note:**
+
+- Replace `[version]` with the current release version (e.g., `v1.2.3`).
+- Replace `[previous release]` with the last release tag (e.g., `v1.2.2`).
+- Always follow the detailed, up-to-date process in
+  `docs/resources/git/merge-instructions.txt` for each release.
+
+---
 
 ### Commit Message Guidelines
 

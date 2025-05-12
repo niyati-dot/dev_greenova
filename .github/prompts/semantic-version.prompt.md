@@ -1,3 +1,17 @@
+---
+description:
+  Semantic versioning guide for Greenova, including Python and npm versioning
+  best practices.
+mode: general
+
+tools:
+  - file_search
+  - read_file
+  - insert_edit_into_file
+  - semantic_search
+  - get_errors
+---
+
 # Semantic Versioning Guide for Greenova Project
 
 When advising on version numbers for Greenova releases, use this guide to

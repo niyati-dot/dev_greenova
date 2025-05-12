@@ -1,3 +1,22 @@
+---
+description:
+  A structured guide for generating comprehensive bug reports in the Greenova
+  environmental management application.
+mode: general
+
+tools:
+  - github
+  - semantic_search
+  - grep_search
+  - file_search
+  - read_file
+  - get_errors
+  - test_failure
+  - run_tests
+---
+
+<!-- filepath: /workspaces/greenova/.github/prompts/bug-report.prompt.md -->
+
 # Greenova Bug Report Generation Guidelines
 
 This prompt helps you generate comprehensive bug reports for the Greenova
@@ -13,8 +32,8 @@ all necessary information is included.
 
 ### Environment Details
 
-- Django Version: 4.1.13
-- Python Version: 3.9.21
+- Django Version: 5.2
+- Python Version: 3.12.9
 - Frontend Technologies: PicoCSS, django-hyperscript, django-htmx
 - Browser and version (if applicable)
 - Device type and operating system

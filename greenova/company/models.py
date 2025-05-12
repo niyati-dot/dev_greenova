@@ -11,59 +11,58 @@ logger = logging.getLogger(__name__)
 
 class Company(models.Model):
     """Model representing a company or organization."""
-    name = models.CharField(max_length=255, unique=True)
-    logo = models.ImageField(upload_to='company_logos/', blank=True, null=True)
+
+    logo = models.ImageField(upload_to="company_logos/", blank=True, null=True)
     description = models.TextField(blank=True)
     website = models.URLField(blank=True)
-    address = models.TextField(blank=True)
     phone = models.CharField(max_length=50, blank=True)
     email = models.EmailField(blank=True)
+    name = models.CharField(max_length=255, unique=True)  # Company name must be unique
+    address = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )  # Automatically set on creation
+    updated_at = models.DateTimeField(auto_now=True)
+    users = models.ManyToManyField(
+        User, related_name="companies"
+    )  # Link many users to many companies
 
     # Company type choices
     COMPANY_TYPES = [
-        ('client', 'Client'),
-        ('contractor', 'Contractor'),
-        ('consultant', 'Consultant'),
-        ('regulator', 'Regulator'),
-        ('internal', 'Internal Department'),
-        ('other', 'Other'),
+        ("client", "Client"),
+        ("contractor", "Contractor"),
+        ("consultant", "Consultant"),
+        ("regulator", "Regulator"),
+        ("internal", "Internal Department"),
+        ("other", "Other"),
     ]
-    company_type = models.CharField(max_length=20, choices=COMPANY_TYPES, default='client')
+    company_type = models.CharField(
+        max_length=20, choices=COMPANY_TYPES, default="client"
+    )
 
     # Company size choices
     COMPANY_SIZES = [
-        ('small', 'Small (1-49 employees)'),
-        ('medium', 'Medium (50-249 employees)'),
-        ('large', 'Large (250+ employees)'),
+        ("small", "Small (1-49 employees)"),
+        ("medium", "Medium (50-249 employees)"),
+        ("large", "Large (250+ employees)"),
     ]
     size = models.CharField(max_length=10, choices=COMPANY_SIZES, blank=True)
 
     # Industry sector choices
     INDUSTRY_SECTORS = [
-        ('manufacturing', 'Manufacturing'),
-        ('construction', 'Construction'),
-        ('mining', 'Mining'),
-        ('energy', 'Energy'),
-        ('transportation', 'Transportation'),
-        ('government', 'Government'),
-        ('consulting', 'Consulting'),
-        ('other', 'Other'),
+        ("manufacturing", "Manufacturing"),
+        ("construction", "Construction"),
+        ("mining", "Mining"),
+        ("energy", "Energy"),
+        ("transportation", "Transportation"),
+        ("government", "Government"),
+        ("consulting", "Consulting"),
+        ("other", "Other"),
     ]
     industry = models.CharField(max_length=20, choices=INDUSTRY_SECTORS, blank=True)
 
     # Company status
     is_active = models.BooleanField(default=True)
-
-    # Many-to-many relationship with users
-    members = models.ManyToManyField(
-        User,
-        through='CompanyMembership',
-        related_name='companies'
-    )
-
-    # Timestamps
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
 
     @staticmethod
     def get_default_company():
@@ -74,16 +73,16 @@ class Company(models.Model):
         return 1
 
     class Meta:
-        verbose_name = 'Company'
-        verbose_name_plural = 'Companies'
-        ordering = ['name']
+        verbose_name = "Company"
+        verbose_name_plural = "Companies"
+        ordering = ["name"]
 
     def __str__(self) -> str:
         return self.name
 
     def get_member_count(self) -> int:
         """Get count of company members."""
-        return self.members.count()
+        return self.users.count()
 
     def get_active_projects_count(self) -> int:
         """Get count of active projects associated with this company."""
@@ -107,121 +106,151 @@ class Company(models.Model):
                 # If is_active doesn't exist yet, count all projects
                 return self.projects.count()
         except Exception as e:
-            logger.error(f'Error counting active projects: {str(e)}')
+            logger.error("Error counting active projects: %s", str(e))
             return 0
 
     def get_members_by_role(self, role: str) -> QuerySet:
         """Get all users with the specified role in this company."""
         return User.objects.filter(
-            companymembership__company=self,
-            companymembership__role=role
+            companymembership__company=self, companymembership__role=role
         )
 
-    def add_member(self, user: User, role: str = 'member') -> None:
+    def add_member(self, user: User, role: str = "member") -> None:
         """Add a user to the company with the specified role."""
         if not CompanyMembership.objects.filter(company=self, user=user).exists():
-            CompanyMembership.objects.create(
-                company=self,
-                user=user,
-                role=role
+            CompanyMembership.objects.create(company=self, user=user, role=role)
+            logger.info(
+                "Added user %s to company %s with role %s",
+                user.username,
+                self.name,
+                role,
             )
-            logger.info(f'Added user {user.username} to company {self.name} with role {role}')
 
     def remove_member(self, user: User) -> None:
         """Remove a user from the company."""
         CompanyMembership.objects.filter(company=self, user=user).delete()
-        logger.info(f'Removed user {user.username} from company {self.name}')
+        logger.info("Removed user %s from company %s", user.username, self.name)
+
+    def clean(self):
+        """Ensure data integrity for Company-User relationship."""
+        # Only check for users on existing companies that have been saved
+        if self.pk and self.id and self.users.count() == 0:
+            raise ValidationError("A company must have at least one user.")
 
 
 class CompanyMembership(models.Model):
     """Through model for company memberships."""
+
     ROLE_CHOICES = [
-        ('owner', 'Owner'),
-        ('admin', 'Administrator'),
-        ('manager', 'Manager'),
-        ('member', 'Member'),
-        ('client_contact', 'Client Contact'),
-        ('contractor', 'Contractor'),
-        ('view_only', 'View Only'),
+        ("owner", "Owner"),
+        ("admin", "Administrator"),
+        ("manager", "Manager"),
+        ("member", "Member"),
+        ("client_contact", "Client Contact"),
+        ("contractor", "Contractor"),
+        ("view_only", "View Only"),
     ]
 
     company = models.ForeignKey(
-        Company,
-        on_delete=models.CASCADE,
-        related_name='memberships'
+        Company, on_delete=models.CASCADE, related_name="memberships"
     )
     user = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='company_memberships'
+        User, on_delete=models.CASCADE, related_name="company_memberships"
     )
-    role = models.CharField(
-        max_length=20,
-        choices=ROLE_CHOICES,
-        default='member'
-    )
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default="member")
     department = models.CharField(max_length=100, blank=True)
     position = models.CharField(max_length=100, blank=True)
     date_joined = models.DateTimeField(default=timezone.now)
     is_primary = models.BooleanField(
-        default=False,
-        help_text="Designates if this is the user's primary company."
+        default=False, help_text="Designates if this is the user's primary company."
     )
 
     class Meta:
-        unique_together = ['user', 'company']
-        ordering = ['company', 'user']
-        verbose_name = 'Company Membership'
-        verbose_name_plural = 'Company Memberships'
+        unique_together = ["user", "company"]
+        ordering = ["company", "user"]
+        verbose_name = "Company Membership"
+        verbose_name_plural = "Company Memberships"
 
     def __str__(self) -> str:
-        return f'{self.user.username} - {self.company.name} ({self.role})'
+        return f"{self.user.username} - {self.company.name} ({self.role})"
 
     def save(self, *args, **kwargs):
         """Override save to ensure only one company is primary."""
         if self.is_primary:
             # Set all other memberships for this user as not primary
-            CompanyMembership.objects.filter(
-                user=self.user,
-                is_primary=True
-            ).exclude(id=self.id if self.id else 0).update(is_primary=False)
+            CompanyMembership.objects.filter(user=self.user, is_primary=True).exclude(
+                id=self.id if self.id else 0
+            ).update(is_primary=False)
         super().save(*args, **kwargs)
 
     def clean(self):
         """Validate that a company can only have one owner."""
-        if self.role == 'owner':
-            existing_owner = CompanyMembership.objects.filter(
-                company=self.company,
-                role='owner'
-            ).exclude(id=self.id if self.id else 0).exists()
+        if self.role == "owner":
+            existing_owner = (
+                CompanyMembership.objects.filter(company=self.company, role="owner")
+                .exclude(id=self.id if self.id else 0)
+                .exists()
+            )
 
             if existing_owner:
-                raise ValidationError({'role': 'A company can only have one owner.'})
+                raise ValidationError({"role": "A company can only have one owner."})
 
 
 class CompanyDocument(models.Model):
     """Model for storing company documents."""
+
     company = models.ForeignKey(
-        Company,
-        on_delete=models.CASCADE,
-        related_name='documents'
+        Company, on_delete=models.CASCADE, related_name="documents"
     )
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
-    file = models.FileField(upload_to='company_documents/')
+    file = models.FileField(upload_to="company_documents/")
     document_type = models.CharField(max_length=100, blank=True)
     uploaded_by = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
         null=True,
-        related_name='uploaded_company_documents'
+        related_name="uploaded_company_documents",
     )
     uploaded_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-uploaded_at']
-        verbose_name = 'Company Document'
-        verbose_name_plural = 'Company Documents'
+        ordering = ["-uploaded_at"]
+        verbose_name = "Company Document"
+        verbose_name_plural = "Company Documents"
 
     def __str__(self) -> str:
-        return f'{self.name} ({self.company.name})'
+        return f"{self.name} ({self.company.name})"
+
+
+class Obligation(models.Model):
+    """Model representing an environmental obligation."""
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name="obligations",
+        help_text="The company associated with this obligation.",
+    )
+    name = models.CharField(max_length=255, unique=True)
+    description = models.TextField(blank=True)
+    due_date = models.DateField()
+    status = models.CharField(
+        max_length=50,
+        choices=[
+            ("not_started", "Not Started"),
+            ("in_progress", "In Progress"),
+            ("completed", "Completed"),
+        ],
+        default="not_started",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["due_date"]
+        verbose_name = "Obligation"
+        verbose_name_plural = "Obligations"
+
+    def __str__(self):
+        return self.name

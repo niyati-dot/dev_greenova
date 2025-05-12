@@ -1,0 +1,10 @@
+# Core dependencies
+-r base.txt
+
+# Performance monitoring
+gprof2dot
+
+# Production server
+gunicorn
+uvicorn
+uvicorn-worker

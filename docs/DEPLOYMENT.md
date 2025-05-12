@@ -19,7 +19,7 @@ User → HTTPS → Cloudflare Edge → HTTPS → Nginx Server → Gunicorn → D
 
 ## Prerequisites
 
-- Python 3.9.21
+- Python 3.12.9
 - SQLite3 (or your preferred database)
 - Nginx web server
 - Virtual environment tool
@@ -34,7 +34,7 @@ User → HTTPS → Cloudflare Edge → HTTPS → Nginx Server → Gunicorn → D
 2. Install required packages:
 
    ```bash
-   pip install django==4.2.20 gunicorn==23.0.0 psycopg2-binary==2.9.9
+   pip install Django==5.2 gunicorn==23.0.0 psycopg2-binary==2.9.9
    ```
 
 3. Clone your Django project:
@@ -55,6 +55,19 @@ User → HTTPS → Cloudflare Edge → HTTPS → Nginx Server → Gunicorn → D
    - Update `ALLOWED_HOSTS` with your domain
    - Configure `STATIC_ROOT` and `MEDIA_ROOT`
    - Set secure cookies and CSRF settings
+
+### Step 5: Ensure Database Schema Consistency
+
+Run the custom management command to ensure the `company_company_users` table
+exists in the database:
+
+```bash
+python manage.py check_and_create_company_users_table
+```
+
+This command checks if the table exists and creates it if necessary. Include
+this step in your deployment or startup scripts to ensure the database schema
+is consistent across all hosts.
 
 ## Django Production Settings
 

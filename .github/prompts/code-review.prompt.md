@@ -1,3 +1,19 @@
+---
+description:
+  Structured template for conducting thorough and constructive code reviews
+  with a focus on Django and Python code quality.
+mode: review
+
+tools:
+  - github
+  - semantic_search
+  - get_errors
+  - list_code_usages
+  - test_failure
+  - run_tests
+  - github-pull-request_activePullRequest
+---
+
 # Code Review Prompt Template
 
 You are assisting me in providing thorough code review feedback on a pull
@@ -19,19 +35,14 @@ I will provide:
 Generate a comprehensive review with these sections:
 
 1. **Introduction**
-
    - Acknowledge the contributor
    - Summarize the purpose of their changes
    - Express appreciation for their contribution
-
 2. **Overall Assessment**
-
    - High-level evaluation of the changes
    - Alignment with project standards and goals
    - General impression (positive aspects first)
-
 3. **Detailed Feedback**
-
    - Organize by file or logical component
    - For each section:
      - What works well (strengths)
@@ -41,14 +52,11 @@ Generate a comprehensive review with these sections:
      - Security considerations (if applicable)
      - Accessibility impact (if applicable)
      - Testing considerations
-
 4. **Specific Recommendations**
-
    - Concrete, actionable suggestions
    - Code examples where helpful
    - Alternative approaches to consider
    - References to documentation or examples
-
 5. **Next Steps**
    - Clear summary of requested changes
    - Guidance on implementation priority
@@ -109,7 +117,14 @@ Format the review as a GitHub comment with:
 
 ## Example Usage
 
-Input: "Review PR #42: 'Add setup documentation' by @username focusing on
-documentation structure and technical accuracy"
+**Input:**
 
-Output: [DETAILED REVIEW FORMATTED AS GITHUB COMMENT]
+```text
+Review PR #42: 'Add setup documentation' by @username focusing on documentation structure and technical accuracy
+```
+
+**Output:**
+
+```markdown
+[DETAILED REVIEW FORMATTED AS GITHUB COMMENT]
+```

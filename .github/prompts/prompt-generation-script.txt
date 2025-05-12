@@ -1,0 +1,4 @@
+using prompt-generation.prompt.md for instructions and formatting, please create a new prompt in gpt-4o.prompt.md to resolve the below issue:
+
+
+i have added the following files in the landing app that may assist with solving the logic probnlem: commons.py constants.py context_processors.py middleware.py mixins.py permissions.py serializers.py signals.py tasks.py validators.py and templatetags/landing_tags.py
