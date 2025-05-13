@@ -2,11 +2,12 @@
 
 This module provides the main dashboard, chart, and HTMX views for
 environmental obligation tracking and compliance monitoring.
+
 """
 
 import base64
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta  # Use timedelta from datetime
 from typing import Any, TypedDict, cast
 
 from django.conf import settings
@@ -50,7 +51,7 @@ class DashboardContext(TypedDict):
     user_roles: dict[str, str]
 
 
-def get_selected_project_id(request):
+def get_selected_project_id(request: HttpRequest) -> int | None:
     """Return the last non-empty project_id from the query string or session."""
     project_ids = request.GET.getlist("project_id")
     project_id = next((pid for pid in reversed(project_ids) if pid), None)
@@ -69,7 +70,7 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
     template_name = "dashboard/dashboard.html"
     login_url = "account_login"
     redirect_field_name = "next"
-    request = None
+    request: HttpRequest  # Ensure this matches the base class type
     include_charts = True  # Enable chart generation
 
     @property
@@ -168,12 +169,20 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
         # are already being added in the get_context_data method
 
     def get_projects(self) -> QuerySet[Project]:
-        """Get projects for the current user."""
+        """Get projects for the current user.
+
+        Returns:
+            QuerySet[Project]: Projects for authenticated user, or empty queryset
+                for anonymous users.
+        """
+        user = self.request.user
+        # Robustly handle anonymous users (SimpleLazyObject or AnonymousUser)
+        if not getattr(user, "is_authenticated", False):
+            return Project.objects.none()
         try:
-            user = cast(AbstractUser, self.request.user)
             return Project.objects.filter(members=user).order_by("-created_at")
-        except (AttributeError, ValueError) as e:
-            logger.exception("Error fetching projects: %s", e)
+        except Exception as e:
+            logger.error("Error fetching projects for user %s: %s", user, e)
             return Project.objects.none()
 
     def get_active_obligations_count(self) -> int:
@@ -214,7 +223,7 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
             query_filter["project_id"] = project_id
 
         today = timezone.now()
-        seven_days_later = today + timezone.timedelta(days=7)
+        seven_days_later = today + timedelta(days=7)
 
         return Obligation.objects.filter(
             action_due_date__range=(today, seven_days_later),
@@ -233,18 +242,6 @@ class ChartView(ChartMixin, ProjectAwareDashboardMixin, TemplateView):
     """View for rendering charts."""
 
     template_name = "dashboard/partials/charts.html"
-
-    @property
-    def selected_project_id(self) -> str | None:
-        """Return the selected project ID from the request/session."""
-        return get_selected_project_id(self.request)
-
-    def get_queryset(self):
-        """Return the queryset for upcoming obligations."""
-        project_id = self.selected_project_id
-        queryset = Obligation.objects.all().order_by("action_due_date")
-        if project_id:
-            queryset = queryset.filter(project_id=project_id)
 
     @property
     def selected_project_id(self) -> str | None:
@@ -337,7 +334,7 @@ class UpcomingObligationsView(ProjectAwareDashboardMixin, ListView):
             return Obligation.objects.none()
 
         today = timezone.now().date()
-        future_date = today + timezone.timedelta(days=14)  # Next 14 days
+        future_date = today + timedelta(days=14)  # Next 14 days
 
         return Obligation.objects.filter(
             project_id=project_id,

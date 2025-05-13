@@ -58,6 +58,9 @@
   <script src="{% static 'js/vendors/gsap/MorphSVGPlugin.min.js' %}" defer></script>
   <script src="{% static 'js/vendors/gsap/SplitText.min.js' %}" defer></script>
 
+  <!-- Theme initialization: must be before hyperscript -->
+  <script src="{% static 'js/modules/theme-init.js' %}"></script>
+
   <!-- HTMX -->
   <script src="{% static 'js/vendors/htmx/htmx.min.js' %}" defer></script>
 {% django_htmx_script %}

@@ -35,7 +35,7 @@ and manage obligations related to environmental regulations.
 1. **django-hyperscript**: Primary implementation for client-side interactions.
 
 1. **django-htmx**: Secondary implementation for client-side interactions only
-   to complient django-hyperscript.
+   to compliment django-hyperscript.
 
 1. **SASS/PostCSS**: Use for advanced styling needs when required.
 
@@ -125,6 +125,7 @@ been activated and are available for use by GitHub Copilot.
   - [GSAP Animation](https://gsap.com/docs/v3/)
   - [PicoCSS Classless](https://picocss.com/docs/classless)
   - [Hyperscript](https://hyperscript.org/docs/)
+  - [TypeScript](https://www.typescriptlang.org/docs/)
   - [HTMX](https://htmx.org/docs/)
   - [django-hyperscript](https://github.com/LucLor06/django-hyperscript#readme)
   - [django-htmx](https://django-htmx.readthedocs.io/en/latest/)

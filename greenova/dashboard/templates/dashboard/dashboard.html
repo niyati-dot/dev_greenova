@@ -55,6 +55,10 @@ Dashboard | Greenova
     <!-- Include our new sidebar component -->
 {% include "dashboard/components/sidebar.html" %}
 
+    <!-- Semantic breadcrumbs navigation for accessibility and navigation -->
+        {# Render breadcrumbs for both authenticated and anonymous users #}
+{% include "layouts/_breadcrumbs.html" %}
+
     <!-- Main dashboard content area -->
     <main class="main-content">
       <!-- Dashboard welcome header - ALWAYS VISIBLE and above selector -->

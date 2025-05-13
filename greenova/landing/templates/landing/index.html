@@ -49,6 +49,14 @@ Greenova helps environmental professionals monitor compliance status and manage 
         href="{% static 'css/dist/components/animations.css' %}" />
 {% endblock extra_css %}
 
+{% block head_scripts %}
+  {{ block.super }}
+  <!-- HTMX for AJAX and dynamic content -->
+  <script src="{% static 'js/vendors/htmx/htmx.min.js' %}" defer></script>
+  <!-- Hyperscript for client-side interactivity -->
+  <script src="{% static 'js/vendors/_hyperscript.min.js' %}" defer></script>
+{% endblock head_scripts %}
+
 {% block extra_head %}
   <!-- JS feature detection -->
   <script>

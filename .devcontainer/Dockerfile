@@ -24,7 +24,6 @@ RUN apt-get update && export DEBIAN_FRONTEND=noninteractive \
   python3-venv \
   gh \
   shfmt \
-  texlive-xetex \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/*
 

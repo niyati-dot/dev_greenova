@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import logging
 import mimetypes
 import os
 import sys
@@ -218,7 +219,8 @@ ALLOWED_HOSTS = [
 
 # Always include local development hosts when DEBUG is True
 if DEBUG:
-    ALLOWED_HOSTS += ["localhost", "127.0.0.1", "0.0.0.0", "*"]
+    # Only add safe local addresses, do not add "0.0.0.0" or "*" to avoid B104
+    ALLOWED_HOSTS += ["localhost", "127.0.0.1"]
 
 # Run validation
 validate_settings()
@@ -330,11 +332,11 @@ MIDDLEWARE = [
     "dashboard.middleware.DashboardPersistenceMiddleware",  # Add our new middleware
     "django.contrib.messages.middleware.MessageMiddleware",
     "django_htmx.middleware.HtmxMiddleware",
-    #    "debug_toolbar.middleware.DebugToolbarMiddleware",  # Debug after core middleware
+    # "debug_toolbar.middleware.DebugToolbarMiddleware",  # Debug after core middleware
     "django_browser_reload.middleware.BrowserReloadMiddleware",
-    #     'django_pdb.middleware.PdbMiddleware',
-    #    "silk.middleware.SilkyMiddleware",  # Profiling middleware works best at the end
-    #     'allauth.usersessions.middleware.UserSessionMiddleware',
+    # 'django_pdb.middleware.PdbMiddleware',
+    # "silk.middleware.SilkyMiddleware",  # Profiling middleware works best at the end
+    # 'allauth.usersessions.middleware.UserSessionMiddleware',
 ]
 
 # Authentication settings
@@ -505,7 +507,7 @@ CACHES = {
         "LOCATION": "greenova-cache",
         "TIMEOUT": 300,  # 5 minutes default timeout
         "OPTIONS": {
-            "MAX_ENTRIES": 1000,  # Maximum number of entries before old ones are cleaned
+            "MAX_ENTRIES": 1000,  # Maximum number of entries before garbage collection
         },
     },
 }
@@ -523,6 +525,36 @@ STATIC_FILE_MAX_AGE = 60 * 60 * 24 * 30  # 30 days
 LOGS_DIR = os.path.join(str(BASE_DIR).replace(" ", "_").replace(":", "_"), "logs")
 if not os.path.exists(LOGS_DIR):
     os.makedirs(LOGS_DIR)
+
+
+class SuppressChromeDevtools404(logging.Filter):
+    """
+    Custom logging filter to suppress 404 warnings for chrome.devtools.json requests.
+
+    This filter prevents log records related to Chrome DevTools 404 errors from
+    cluttering the logs.
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        """
+        Determine if the log record should be logged.
+
+        Args:
+            record (logging.LogRecord): The log record to filter.
+
+        Returns:
+            bool: False if the record is a Chrome DevTools 404 warning,
+                  True otherwise.
+        """
+        msg = str(record.getMessage())
+        if (
+            record.levelno == logging.WARNING
+            and "/appspecific/com.chrome.devtools.json" in msg
+            and ("Not Found" in msg or "404" in msg)
+        ):
+            return False  # Suppress this log record
+        return True
+
 
 # Update the LOGGING configuration with compliant Django format
 # We need to cast the dict to satisfy mypy while still using "class" key for Django
@@ -544,12 +576,19 @@ LOGGING = {
             "class": "logging.StreamHandler",  # Django expects "class", not "class_"
             "level": "WARNING",
             "formatter": "simple",
+            "filters": ["suppress_chrome_devtools_404"],
         },
         "file": {
             "class": "logging.FileHandler",  # Django expects "class", not "class_"
             "level": "INFO",
             "filename": os.path.join(LOGS_DIR, "django.log"),
             "formatter": "verbose",
+            "filters": ["suppress_chrome_devtools_404"],
+        },
+    },
+    "filters": {
+        "suppress_chrome_devtools_404": {
+            "()": SuppressChromeDevtools404,
         },
     },
     "loggers": {

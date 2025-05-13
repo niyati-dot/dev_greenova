@@ -2,11 +2,13 @@
 <!DOCTYPE html>
 <html lang="en">
   <head>
+    {% block head_scripts %}
+    {% endblock head_scripts %}
     {% block meta %}
-    {% endblock %}
+    {% endblock meta %}
     <title>
       {% block title %}
-      {% endblock %}
+      {% endblock title %}
     </title>
 
     <!-- Resource hints for performance optimization -->
@@ -33,18 +35,16 @@
       <link rel="stylesheet" href="{% static 'css/dist/styles.css' %}" />
     </noscript>
 
-    {% block head_scripts %}
-    {% endblock %}
     {% block extra_css %}
-    {% endblock %}
+    {% endblock extra_css %}
     {% block extra_head %}
-    {% endblock %}
+    {% endblock extra_head %}
   </head>
 
-  <body {% block body_attrs %}{% endblock %}>
+  <body {% block body_attrs %}{% endblock body_attrs %}>
     {% block body %}
-    {% endblock %}
+    {% endblock body %}
     {% block body_end %}
-    {% endblock %}
+    {% endblock body_end %}
   </body>
 </html>

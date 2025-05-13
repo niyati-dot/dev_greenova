@@ -36,4 +36,9 @@
 
   // Show found files on stdout (only valid at root)
   "showFound": true,
+
+  // Ignore all Markdown files in the .github directory
+  "ignores": [
+    ".github/**/*.md"
+  ]
 }

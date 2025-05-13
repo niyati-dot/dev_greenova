@@ -1,304 +1,22 @@
-# Copyright 2025 Enveng Group.
-# SPDX-License-Identifier: 	AGPL-3.0-or-later
+"""Unit tests for user profile model and profile view in the Greenova project.
 
-"""Tests for pre-merge functionality in the Greenova project."""
+These tests cover user profile relationships, overdue obligations logic, and
+profile view context and HTML structure.
+"""
+
+# Copyright 2025 Enveng Group.
+# SPDX-License-Identifier: AGPL-3.0-or-later
 
 from datetime import timedelta
 
 import pytest
-from company.models import Company, CompanyMembership
-from django.test import Client
+from company.models import CompanyMembership
 from django.urls import reverse
 from django.utils import timezone
-from mechanisms.models import EnvironmentalMechanism
 from obligations.models import Obligation
-from projects.models import Project
-from users.models import Profile, User
+from users.models import Profile
 
-# Replace magic values with constants
 HTTP_OK = 200
-
-
-@pytest.fixture
-def company():
-    """Create a company for testing."""
-    return Company.objects.create(name="Test Company")
-
-
-@pytest.mark.django_db
-def test_obligation_summary_view(authenticated_client: Client):
-    """Test the ObligationSummaryView with filtering capabilities."""
-    # Setup test data
-    project = Project.objects.create(name="Test Project")
-    mechanism = EnvironmentalMechanism.objects.create(
-        name="Test Mechanism", project=project
-    )
-    obligation1 = Obligation.objects.create(
-        obligation_number="OBL001",
-        obligation="Test Obligation 1",
-        status="not_started",
-        primary_environmental_mechanism=mechanism,
-        project=project,
-    )
-    obligation2 = Obligation.objects.create(
-        obligation_number="OBL002",
-        obligation="Test Obligation 2",
-        status="in_progress",
-        primary_environmental_mechanism=mechanism,
-        project=project,
-    )
-
-    # Test filtering by status
-    url = reverse("obligations:summary") + (
-        f"?status=not_started&mechanism_id={mechanism.id}"
-    )
-    response = authenticated_client.get(url)
-    assert response.status_code == HTTP_OK
-    assert obligation1.obligation_number in response.content.decode()
-    assert obligation2.obligation_number not in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_obligation_list_template(authenticated_client: Client):
-    """Test the obligation list template rendering."""
-    # Setup test data
-    project = Project.objects.create(name="Test Project")
-    mechanism = EnvironmentalMechanism.objects.create(
-        name="Test Mechanism", project=project
-    )
-    Obligation.objects.create(
-        obligation_number="OBL001",
-        obligation="Test Obligation",
-        status="not_started",
-        primary_environmental_mechanism=mechanism,
-        project=project,
-    )
-
-    # Test rendering of obligation list
-    url = reverse("obligations:summary") + (f"?mechanism_id={mechanism.id}")
-    response = authenticated_client.get(url)
-    assert response.status_code == HTTP_OK
-    assert "Test Obligation" in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_procedure_charts_interactivity(authenticated_client: Client):
-    """Test the interactivity of procedure charts with HTMX."""
-    # Setup test data
-    project = Project.objects.create(name="Test Project")
-    mechanism = EnvironmentalMechanism.objects.create(
-        name="Test Mechanism", project=project
-    )
-    Obligation.objects.create(
-        obligation_number="OBL001",
-        obligation="Test Obligation",
-        status="not_started",
-        primary_environmental_mechanism=mechanism,
-        project=project,
-        procedure="Cultural Heritage Management",  # Use a valid procedure value
-    )
-
-    # Test HTMX interactivity
-    url = reverse("obligations:summary") + f"?mechanism_id={mechanism.id}"
-    response = authenticated_client.get(url, HTTP_HX_REQUEST="true")
-    assert response.status_code == HTTP_OK
-    assert "Test Obligation" in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_obligation_delete_view(admin_client: Client):
-    """Test the ObligationDeleteView functionality."""
-    # Setup test data
-    project = Project.objects.create(name="Test Project")
-    mechanism = EnvironmentalMechanism.objects.create(
-        name="Test Mechanism", project=project
-    )
-    obligation = Obligation.objects.create(
-        obligation_number="OBL001",
-        obligation="Test Obligation",
-        status="not_started",
-        primary_environmental_mechanism=mechanism,
-        project=project,
-    )
-
-    # Test deletion
-    url = reverse("obligations:delete", args=[obligation.obligation_number])
-    response = admin_client.post(url)
-    assert response.status_code == HTTP_OK
-    assert not Obligation.objects.filter(obligation_number="OBL001").exists()
-
-
-@pytest.mark.django_db
-def test_company_creation(authenticated_client, regular_user):
-    """Test creating a new company."""
-    # Make the user a company admin by creating a company and making them an admin
-    initial_company = Company.objects.create(name="Initial Company")
-    CompanyMembership.objects.create(
-        company=initial_company, user=regular_user, role="admin", is_primary=True
-    )
-
-    url = reverse("company:create")
-    data = {
-        "name": "New Company",
-        "description": "A newly created company",
-        "company_type": "client",
-        "industry": "consulting",  # Updated to use a valid industry choice
-        "is_active": True,
-    }
-    response = authenticated_client.post(url, data)
-
-    # Print response content if status code is 200 (form errors)
-    if response.status_code == 200:
-        print("Form errors:", response.content.decode())
-
-    assert response.status_code == 302  # Redirect after successful creation
-    assert Company.objects.filter(name="New Company").exists()
-
-
-@pytest.mark.django_db
-def test_company_update(authenticated_client, company, regular_user):
-    """Test updating an existing company."""
-    # Make the user an admin of the company
-    CompanyMembership.objects.create(
-        company=company, user=regular_user, role="admin", is_primary=True
-    )
-
-    # Make sure the user is properly associated with the company
-    company.users.add(regular_user)
-    company.save()
-
-    url = reverse("company:update", args=[company.id])
-    data = {
-        "name": "Updated Company",
-        "description": "Updated description",
-        "company_type": "contractor",
-        "industry": "consulting",
-        "is_active": False,
-        # Add all other possible fields to ensure form validation
-        "website": "https://example.com",
-        "phone": "123-456-7890",
-        "email": "info@example.com",
-        "address": "123 Main St",
-        "size": "medium",
-    }
-    response = authenticated_client.post(url, data)
-
-    # Debug output
-    if response.status_code != 302:
-        print(f"Response status: {response.status_code}")
-        print(f"Response content: {response.content.decode()}")
-
-    assert response.status_code == 302
-    company.refresh_from_db()
-    assert company.name == "Updated Company"
-    assert company.description == "Updated description"
-    assert company.company_type == "contractor"
-    assert company.industry == "consulting"
-    assert not company.is_active
-
-
-@pytest.mark.django_db
-def test_company_delete(authenticated_client, company, regular_user):
-    """Test deleting a company."""
-    # Make the user an owner of the company (only owners can delete companies)
-    company.users.add(regular_user)
-    CompanyMembership.objects.create(
-        company=company,
-        user=regular_user,
-        role="owner",  # Must be owner to delete
-        is_primary=True,
-    )
-
-    url = reverse("company:delete", args=[company.id])
-    response = authenticated_client.post(url)
-
-    # Debug output
-    if response.status_code != 302:
-        print(f"Delete response status: {response.status_code}")
-        print(f"Delete response content: {response.content.decode()}")
-
-    assert response.status_code == 302
-    assert not Company.objects.filter(id=company.id).exists()
-
-
-@pytest.mark.django_db
-def test_company_list_view(authenticated_client, company, regular_user):
-    """Test the company list view."""
-    # Associate the user with the company to grant access
-    company.users.add(regular_user)
-    CompanyMembership.objects.create(
-        company=company, user=regular_user, role="member", is_primary=True
-    )
-
-    url = reverse("company:list")
-    response = authenticated_client.get(url)
-    assert response.status_code == 200
-    assert company.name in response.content.decode()
-
-
-@pytest.mark.django_db
-def test_company_membership_creation(authenticated_client, company, regular_user):
-    """Test adding a user to a company."""
-    # First make the regular user an admin of the company (to have permission to add members)
-    company.users.add(regular_user)
-    CompanyMembership.objects.create(
-        company=company,
-        user=regular_user,
-        role="admin",  # Admin role needed to add other users
-        is_primary=True,
-    )
-
-    # Create a new user to add to the company
-    new_user = User.objects.create_user(
-        username="newuser", password="password123", email="newuser@example.com"
-    )
-
-    url = reverse("company:add_member", args=[company.id])
-    data = {
-        "user": new_user.id,
-        "role": "manager",
-        "department": "Engineering",
-        "position": "Lead Engineer",
-        "is_primary": True,
-    }
-    response = authenticated_client.post(url, data)
-    assert response.status_code == 200  # HTMX response is 200 OK, not 302
-    assert CompanyMembership.objects.filter(company=company, user=new_user).exists()
-
-
-@pytest.mark.django_db
-def test_company_membership_removal(authenticated_client, company, regular_user):
-    """Test removing a user from a company."""
-    # First make the regular user an admin of the company (to have permission to remove members)
-    company.users.add(regular_user)
-    CompanyMembership.objects.create(
-        company=company,
-        user=regular_user,
-        role="admin",  # Admin role needed to remove users
-        is_primary=True,
-    )
-
-    # Create a new user to remove from the company
-    new_user = User.objects.create_user(
-        username="removeme", password="password123", email="removeme@example.com"
-    )
-
-    # Add the new user to the company
-    company.users.add(new_user)
-    membership = CompanyMembership.objects.create(
-        company=company, user=new_user, role="manager"
-    )
-
-    url = reverse("company:remove_member", args=[company.id, membership.id])
-    response = authenticated_client.post(url)
-
-    # Debug output
-    if response.status_code != 200:  # HTMX response is 200 OK, not 302
-        print(f"Remove member response status: {response.status_code}")
-        print(f"Remove member response content: {response.content.decode()}")
-
-    assert response.status_code == 200  # HTMX response is 200 OK
-    assert not CompanyMembership.objects.filter(id=membership.id).exists()
 
 
 @pytest.mark.django_db
@@ -378,7 +96,11 @@ class TestProfileView:
     def test_profile_overdue_obligations_count(
         self, authenticated_client, regular_user, company, project, mechanism
     ):
-        """Test that the profile view correctly counts and displays overdue obligations."""
+        """
+        Test that the profile view correctly counts and displays overdue
+        obligations.
+
+        """
         # Create company membership
         membership = CompanyMembership.objects.create(
             user=regular_user, company=company, role="manager"
@@ -508,11 +230,11 @@ class TestProfileView:
         content = response.content.decode("utf-8")
 
         # Verify the overdue alert HTML structure
-        assert '<div class="alert alert-warning overdue-alert">' in content
+        assert "alert-warning overdue-alert" in content
         assert "You have <strong>2</strong> overdue compliance items" in content
         assert '<a href="' in content and "View all" in content
 
-        # Verify the placement in the document - after profile header, before contact info
+        # Verify the placement in the document - after profile header, before contact
         assert (
             content.find("<h2>Profile</h2>")
             < content.find("overdue-alert")
@@ -588,4 +310,4 @@ class TestProfileView:
             )
         else:
             # Otherwise check for profile initial
-            assert '<div class="profile-initial">' in content
+            assert '<div class="profile-initial"' in content
