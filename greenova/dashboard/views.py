@@ -91,49 +91,65 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
         return response
 
     def get_context_data(self, **kwargs: dict[str, Any]) -> dict[str, Any]:
-        """Get the context data for template rendering."""
-        # Let the mixin handle project selection
         context = super().get_context_data(**kwargs)
+
+        selected_project_id = get_selected_project_id(self.request)
+        context["selected_project_id"] = selected_project_id
 
         try:
             user = cast(AbstractUser, self.request.user)
 
-            # Get projects for the current user with prefetch_related
+            # Always get projects for selector — don't skip
             projects = self.get_projects().prefetch_related("memberships")
+            context["projects"] = projects
 
-            # Build user_roles dictionary
-            user_roles = {}
-            for project in projects:
-                user_roles[str(project.pk)] = project.get_user_role(user)
+            # Build user_roles dictionary for all projects
+            user_roles = {str(p.pk): p.get_user_role(user) for p in projects}
+            context["user_roles"] = user_roles
 
-            # Get dashboard statistics
-            context.update(
-                {
-                    "projects": projects,
+            # Flag if projects exist (for the selector visibility)
+            context["project_selector_exists"] = projects.exists()
+
+            # If no project selected, set flag and minimal dashboard data
+            if not selected_project_id:
+                context.update({
+                    "show_empty_state": True,
+                    "overdue_obligations_count": 0,
+                    "active_obligations_count": 0,
+                    "active_obligations_trend": 0,
+                    "upcoming_deadlines_count": 0,
+                    "active_projects_count": projects.count(),
+                    "active_mechanisms_count": 0,
+                    "show_feedback_link": True,
                     "system_status": SYSTEM_STATUS,
                     "app_version": APP_VERSION,
                     "last_updated": LAST_UPDATED,
-                    "user": user,
                     "debug": settings.DEBUG,
                     "error": None,
-                    "user_roles": user_roles,
-                    "show_feedback_link": True,
-                    "overdue_obligations_count": self.get_overdue_obligations_count(),
-                    "active_obligations_count": self.get_active_obligations_count(),
-                    "active_obligations_trend": self.get_obligations_trend(),
-                    "upcoming_deadlines_count": self.get_upcoming_deadlines_count(),
-                    "active_projects_count": projects.count(),
-                    "active_mechanisms_count": self.get_active_mechanisms_count(),
-                    "selected_project_id": get_selected_project_id(self.request),
-                }
-            )
+                })
+                return context
 
-            # Add chart data - this is handled by the ChartMixin parent class
-            # but we can add additional charts specific to this view
+            # If a project is selected, load full dashboard data
+            context.update({
+                "show_empty_state": False,
+                "system_status": SYSTEM_STATUS,
+                "app_version": APP_VERSION,
+                "last_updated": LAST_UPDATED,
+                "user": user,
+                "debug": settings.DEBUG,
+                "error": None,
+                "show_feedback_link": True,
+                "overdue_obligations_count": self.get_overdue_obligations_count(),
+                "active_obligations_count": self.get_active_obligations_count(),
+                "active_obligations_trend": self.get_obligations_trend(),
+                "upcoming_deadlines_count": self.get_upcoming_deadlines_count(),
+                "active_projects_count": projects.count(),
+                "active_mechanisms_count": self.get_active_mechanisms_count(),
+                "selected_project_id": selected_project_id,
+            })
+
+            # Add any charts or extra context as usual
             self.add_specific_charts(context)
-
-            # Add a flag to check if project selector should exist
-            context["project_selector_exists"] = self.get_projects().exists()
 
         except (AttributeError, ValueError) as e:
             logger.exception("Error in dashboard context: %s", e)
@@ -141,21 +157,17 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
 
         try:
             _, compliance_chart = create_project_compliance_chart(context["projects"])
-            context["compliance_chart"] = base64.b64encode(compliance_chart).decode(
-                "utf-8"
-            )
+            context["compliance_chart"] = base64.b64encode(compliance_chart).decode("utf-8")
         except Exception as exc:
             logger.exception("Error generating compliance chart: %s", exc)
 
         try:
-            selected_project_id = context.get("selected_project_id")
-            context["obligations_status_chart_svg"] = (
-                create_obligations_status_chart_svg(selected_project_id)
-            )
+            context["obligations_status_chart_svg"] = create_obligations_status_chart_svg(selected_project_id)
         except Exception as exc:
             logger.exception("Error generating obligations status chart: %s", exc)
 
         return context
+
 
     def add_specific_charts(self, context: dict[str, Any]) -> None:
         """

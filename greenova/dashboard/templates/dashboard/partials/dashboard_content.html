@@ -6,7 +6,14 @@
 
 <!-- Dashboard content that will be swapped when a project is selected -->
 <!-- This contains ONLY the charts and data tables, not structural elements -->
-
+{% if show_empty_state %}
+  <section class="dashboard-empty-state" aria-label="Select a project">
+    <div class="empty-message">
+      <h2>Please select a project to view your dashboard.</h2>
+      <p>Choose a project from the selector above to load charts, tables, and compliance data.</p>
+    </div>
+  </section>
+{% else %}
 <!-- Dashboard Summary Cards -->
 <section class="dashboard-metrics"
          aria-label="Dashboard Summary"
@@ -237,10 +244,11 @@ Loading projects data...
 
 <!-- Add Obligation Floating Button -->
 <div class="floating-action-button" id="add-obligation-button">
-  <a href="{% url 'obligations:create' %}"
-     class="fab-button"
+  <a href="{% url 'obligations:create' %}?project_id={{ selected_project_id }}"
+     class="fab-button obligation"
      aria-label="Add new obligation">
-    <span class="icon-plus" aria-hidden="true"></span>
+    <i class="fa fa-plus" aria-hidden="true"></i>
   </a>
   <span class="fab-tooltip">Add Obligation</span>
 </div>
+{% endif %}

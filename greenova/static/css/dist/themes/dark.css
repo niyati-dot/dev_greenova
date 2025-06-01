@@ -1,46 +1,46 @@
 /**************************************************
  *                                                *
- *               Dark-mode Coloring               *
+ *              Light-mode  Coloring              *
  *                                                *
  **************************************************/
-:root:not([data-theme='light']),
-:root[data-theme='dark'] {
+:root:not([data-theme='dark']),
+:root[data-theme='light'] {
   /**************************************************
-   *                                                *
-   *                 Primary colours                *
-   *                                                *
-   **************************************************/
+    *                                                *
+    *                 Primary colours                *
+    *                                                *
+    **************************************************/
 
   /* Green Primary - Use Cases: Body backgrounds, icon backgrounds, buttons */
-  --greenova-green-primary: #b5c29a;
+  --greenova-green-primary: #6a784e; /* Darkened for better contrast */
 
   /* Green Secondary - Use Cases: Header backgrounds */
-  --greenova-green-secondary: #5a6a4b;
+  --greenova-green-secondary: #a5b485; /* Adjusted for better visibility */
 
   /* Green Tertiary - Use Cases: Focus Areas on header or background backgrounds */
-  --greenova-green-tertiary: #4d5741;
+  --greenova-green-tertiary: #505a3d; /* Improved contrast ratio */
 
   /* Beige Primary - Use Cases: Secondary accent, navigation bars, icons in focus */
-  --greenova-beige-primary: #c0b0a0;
+  --greenova-beige-primary: #d8ccba; /* Adjusted for better contrast */
 
   /* Beige Secondary - Use Cases: Beige alternate, when Beige Primary in use */
-  --greenova-beige-secondary: #9e8e7e;
+  --greenova-beige-secondary: #b8a694; /* Increased contrast */
 
   /* Background Primary - Use Cases: Frame Colour, main background*/
-  --greenova-background-primary: #2c3328;
+  --greenova-background-primary: #f5f7f2; /* Lightened for better contrast with dark text */
 
   /* Background Secondary - Use Cases: Container background colour*/
-  --greenova-background-secondary: #3d4d36;
+  --greenova-background-secondary: #e8ede3; /* Slightly adjusted for better contrast */
 
   /* Text Primary Dark - Use Cases: Immutable Text, for Titles. Icons */
-  --greenova-text-primary-dark: #fff;
+  --greenova-text-primary-dark: #000;
 
   /* Text Secondary Dark - Use Cases: Immutable Text, Headings and body*/
-  --greenova-text-secondary-dark: #e8e8e8;
+  --greenova-text-secondary-dark: #222; /* Darkened for better contrast */
 
   /* Text Tertiary Dark - Use Cases: Mutable Text, for text box hints */
-  --greenova-text-tertiary-dark: #a0a0a0;
+  --greenova-text-tertiary-dark: #767676; /* Fixed variable name and improved contrast for WCAG AA */
 
   /* Text Primary Light - Use Cases: All text on coloured backgrounds*/
-  --greenova-text-primary-light: #000;
+  --greenova-text-primary-light: #fff; /* Fixed variable name */
 }
