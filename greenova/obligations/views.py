@@ -21,6 +21,7 @@ from django.views.generic.edit import DeleteView
 from django_htmx.http import trigger_client_event
 from mechanisms.models import EnvironmentalMechanism
 from projects.models import Project, ProjectMembership
+from responsibility.models import Responsibility, ResponsibilityAssignment
 
 from .forms import EvidenceUploadForm, ObligationForm
 from .models import Obligation, ObligationEvidence
@@ -423,6 +424,8 @@ class ObligationCreateView(LoginRequiredMixin, CreateView):
                 kwargs["project"] = project
             except Project.DoesNotExist:
                 pass
+        kwargs["responsibilities"] = Responsibility.objects.all()
+        kwargs["user"] = self.request.user
         return kwargs
 
     def get_context_data(self, **kwargs):
@@ -430,6 +433,16 @@ class ObligationCreateView(LoginRequiredMixin, CreateView):
         project_id = self.request.GET.get("project_id")
         if project_id:
             context["project_id"] = project_id
+            try:
+                project = Project.objects.get(id=project_id)
+                context["project_name"] = project.name
+            except Project.DoesNotExist:
+                context["project_name"] = "Unknown Project"
+
+        #for current user info
+        context["user_id"] = self.request.user.id
+        context["user_name"] = self.request.user.get_full_name() or self.request.user.username
+
         return context
 
     def form_valid(self, form):
@@ -444,6 +457,42 @@ class ObligationCreateView(LoginRequiredMixin, CreateView):
         try:
             # Save the form
             obligation = form.save()
+
+            # Handle primary responsibility
+            primary_responsibility = None
+            responsibility_str = form.cleaned_data.get("responsibility")
+            try:
+                primary_responsibility = Responsibility.objects.get(name=responsibility_str)
+            except Responsibility.DoesNotExist:
+                pass
+
+            if primary_responsibility:
+                assignment, created = ResponsibilityAssignment.objects.get_or_create(
+                    user=self.request.user,
+                    obligation=obligation,
+                    role=primary_responsibility,
+                    defaults={
+                        "responsibility": primary_responsibility,
+                        "created_by": self.request.user,
+                    }
+                )
+
+
+            # Handle additional responsibilities
+            responsibilities = form.cleaned_data.get("responsibilities")
+            if responsibilities:
+                for responsibility_obj in responsibilities:
+                    
+                    if not responsibility_obj:
+                        continue
+                    ResponsibilityAssignment.objects.get_or_create(
+                        user=self.request.user,
+                        obligation=obligation,
+                        responsibility=responsibility_obj,
+                        role=primary_responsibility or responsibility_obj,  # fallback to itself
+                        created_by=self.request.user,
+                    )
+
 
             # Add success message
             messages.success(
