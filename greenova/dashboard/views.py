@@ -21,6 +21,10 @@ from django.views.decorators.vary import vary_on_headers
 from django.views.generic import ListView, TemplateView
 from obligations.models import Obligation
 from projects.models import Project
+from django.http import JsonResponse
+from django.views.decorators.http import require_GET
+from .figures import create_obligations_status_chart_svg
+
 
 # Import our new components
 from .figures import (
@@ -91,10 +95,13 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
         return response
 
     def get_context_data(self, **kwargs: dict[str, Any]) -> dict[str, Any]:
+
         context = super().get_context_data(**kwargs)
 
         selected_project_id = get_selected_project_id(self.request)
         context["selected_project_id"] = selected_project_id
+        from django.utils.timezone import now
+        context["now"] = now()
 
         try:
             user = cast(AbstractUser, self.request.user)
@@ -114,9 +121,9 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
             if not selected_project_id:
                 context.update({
                     "show_empty_state": True,
-                    "overdue_obligations_count": 0,
-                    "active_obligations_count": 0,
-                    "active_obligations_trend": 0,
+                    "overdue_obligations_count": 10,
+                    "active_obligations_count": 20,
+                    "active_obligations_trend": 30,
                     "upcoming_deadlines_count": 0,
                     "active_projects_count": projects.count(),
                     "active_mechanisms_count": 0,
@@ -142,7 +149,10 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
                 "overdue_obligations_count": self.get_overdue_obligations_count(),
                 "active_obligations_count": self.get_active_obligations_count(),
                 "active_obligations_trend": self.get_obligations_trend(),
-                "upcoming_deadlines_count": self.get_upcoming_deadlines_count(),
+                "upcoming_deadlines_count7": self.get_upcoming_deadlines_count(7),
+                "upcoming_deadlines_count14": self.get_upcoming_deadlines_count(14),
+                "upcoming_deadlines_count30": self.get_upcoming_deadlines_count(30),
+                "upcoming_deadlines_count90": self.get_upcoming_deadlines_count(90),
                 "active_projects_count": projects.count(),
                 "active_mechanisms_count": self.get_active_mechanisms_count(),
                 "selected_project_id": selected_project_id,
@@ -165,7 +175,7 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
             context["obligations_status_chart_svg"] = create_obligations_status_chart_svg(selected_project_id)
         except Exception as exc:
             logger.exception("Error generating obligations status chart: %s", exc)
-
+        self.add_specific_charts(context)
         return context
 
 
@@ -179,6 +189,7 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
         # Add any dashboard-specific chart data here
         # This method is intentionally left minimal as the base charts
         # are already being added in the get_context_data method
+        pass
 
     def get_projects(self) -> QuerySet[Project]:
         """Get projects for the current user.
@@ -205,7 +216,7 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
             query_filter["project_id"] = project_id
 
         return Obligation.objects.filter(
-            status__in=["pending", "in_progress"], **query_filter
+            status__in=["pending", "in progress"], **query_filter
         ).count()
 
     def get_overdue_obligations_count(self) -> int:
@@ -217,7 +228,7 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
         today = timezone.now().date()
         return Obligation.objects.filter(
             action_due_date__lt=today,
-            status__in=["pending", "in_progress"],
+            status__in=["pending", "in progress"],
             **query_filter,
         ).count()
 
@@ -227,19 +238,19 @@ class DashboardHomeView(ProjectAwareDashboardMixin, TemplateView):
         # Simplified implementation for demonstration
         return 5  # Example: 5% increase
 
-    def get_upcoming_deadlines_count(self) -> int:
-        """Get count of upcoming deadlines in the next 7 days."""
+    def get_upcoming_deadlines_count(self, days: int) -> int:
+        """Get count of upcoming deadlines in the next 7,14,30,90 days."""
         project_id = self.selected_project_id
         query_filter = {}
         if project_id:
             query_filter["project_id"] = project_id
 
         today = timezone.now()
-        seven_days_later = today + timedelta(days=7)
+        end_days_later = today + timedelta(days=days)
 
         return Obligation.objects.filter(
-            action_due_date__range=(today, seven_days_later),
-            status__in=["pending", "in_progress"],
+            action_due_date__range=(today, end_days_later),
+            status__in=["pending", "in progress"],
             **query_filter,
         ).count()
 
@@ -265,18 +276,19 @@ class ChartView(ChartMixin, ProjectAwareDashboardMixin, TemplateView):
         now = timezone.now()
         queryset = Project.objects.filter(
             obligations__action_due_date__lt=now,
-            obligations__status__in=["pending", "in_progress"],
+            obligations__status__in=["pending", "in progress"],
         ).distinct()
         return queryset
 
     def get_context_data(self, **kwargs):
         """Add projects_with_stats to the context for at-risk projects."""
         context = super().get_context_data(**kwargs)
+
         now = timezone.now()
         projects_with_stats = []
         for project in context["projects"]:
             overdue_obligations = project.obligations.filter(
-                action_due_date__lt=now, status__in=["pending", "in_progress"]
+                action_due_date__lt=now, status__in=["pending", "in progress"]
             )
             overdue_count = overdue_obligations.count()
             last_due_date = overdue_obligations.order_by("-action_due_date").first()
@@ -305,7 +317,7 @@ class ProjectsAtRiskView(ProjectAwareDashboardMixin, ListView):
         now = timezone.now()
         queryset = Project.objects.filter(
             obligations__action_due_date__lt=now,
-            obligations__status__in=["pending", "in_progress"],
+            obligations__status__in=["pending", "in progress"],
         ).distinct()
         return queryset[:10]
 
@@ -316,7 +328,7 @@ class ProjectsAtRiskView(ProjectAwareDashboardMixin, ListView):
         projects_with_stats = []
         for project in context["projects"]:
             overdue_obligations = project.obligations.filter(
-                action_due_date__lt=now, status__in=["pending", "in_progress"]
+                action_due_date__lt=now, status__in=["pending", "in progress"]
             )
             overdue_count = overdue_obligations.count()
             last_due_date = overdue_obligations.order_by("-action_due_date").first()
@@ -332,6 +344,96 @@ class ProjectsAtRiskView(ProjectAwareDashboardMixin, ListView):
         context["projects_with_stats"] = projects_with_stats
         return context
 
+def search_obligations(request):
+    query = request.GET.get('q', '').strip()
+    project_id = get_selected_project_id(request)  # your project filter function
+
+    if not project_id:
+        return JsonResponse({'obligations': []})
+
+    # Filter obligations based on project and search query in obligation_number or obligation fields
+    obligations_qs = Obligation.objects.filter(
+        project_id=project_id
+    ).filter(
+        Q(obligation_number__icontains=query) | Q(obligation__icontains=query)
+    ).values(
+        'id', 'obligation_number', 'obligation', 'action_due_date', 'status'
+    )[:50]  # limit for performance
+
+    obligations = list(obligations_qs)
+
+    return JsonResponse({'obligations': obligations})
+
+class OverdueObligationsView(ProjectAwareDashboardMixin, ListView):
+    template_name = "dashboard/partials/overdue_obligations_table.html"
+    context_object_name = "obligations"
+
+    def get_queryset(self):
+        project_id = get_selected_project_id(self.request)
+        if not project_id:
+            return Obligation.objects.none()
+
+        today = timezone.now().date()
+
+        return Obligation.objects.filter(
+            project_id=project_id,
+            action_due_date__lt=today,
+            status__in=["pending", "in progress"],
+        ).order_by("-action_due_date")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["selected_project_id"] = get_selected_project_id(self.request)
+        return context
+
+class ActiveObligationsView(ProjectAwareDashboardMixin, ListView):
+    template_name = "dashboard/partials/active_obligations_table.html"  # create this template
+    context_object_name = "obligations"
+
+    def get_queryset(self):
+        project_id = get_selected_project_id(self.request)
+        if not project_id:
+            return Obligation.objects.none()
+
+        # Filter for active obligations by status (adjust if needed)
+        return Obligation.objects.filter(
+            project_id=project_id,
+            status__in=["pending", "in progress"],  # or whatever statuses define "active"
+        ).order_by("action_due_date")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["selected_project_id"] = get_selected_project_id(self.request)
+        return context
+
+class UpcomingObligationsDaysView(ProjectAwareDashboardMixin, ListView):
+    template_name = "dashboard/partials/upcoming_obligations_days_table.html"
+    context_object_name = "obligations"
+
+    def get_days(self):
+        return int(self.kwargs.get("days", 7))
+
+    def get_queryset(self):
+        project_id = get_selected_project_id(self.request)
+        if not project_id:
+            return Obligation.objects.none()
+
+        today = timezone.now().date()
+        end_date = today + timezone.timedelta(days=self.get_days())
+
+        return Obligation.objects.filter(
+            project_id=project_id,
+            action_due_date__gte=today,
+            action_due_date__lte=end_date,
+            status__in=["pending", "in progress"],
+        ).order_by("action_due_date")
+
+        def get_context_data(self, **kwargs):
+            context = super().get_context_data(**kwargs)
+            context["selected_project_id"] = get_selected_project_id(self.request)
+            context['period_label'] = f"Upcoming Obligations (Next {self.get_days()} Days)"
+
+        return context
 
 class UpcomingObligationsView(ProjectAwareDashboardMixin, ListView):
     """View for upcoming obligations with due dates in the near future."""
@@ -352,7 +454,7 @@ class UpcomingObligationsView(ProjectAwareDashboardMixin, ListView):
             project_id=project_id,
             action_due_date__gte=today,
             action_due_date__lte=future_date,
-            status__in=["pending", "in_progress"],
+            status__in=["pending", "in progress"],
         ).order_by("action_due_date")[:10]
 
     def get_context_data(self, **kwargs):
@@ -360,3 +462,4 @@ class UpcomingObligationsView(ProjectAwareDashboardMixin, ListView):
         context = super().get_context_data(**kwargs)
         context["selected_project_id"] = get_selected_project_id(self.request)
         return context
+

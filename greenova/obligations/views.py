@@ -22,6 +22,7 @@ from django_htmx.http import trigger_client_event
 from mechanisms.models import EnvironmentalMechanism
 from projects.models import Project, ProjectMembership
 from responsibility.models import Responsibility, ResponsibilityAssignment
+from django.http import HttpRequest, HttpResponse
 
 from .forms import EvidenceUploadForm, ObligationForm
 from .models import Obligation, ObligationEvidence
@@ -482,7 +483,7 @@ class ObligationCreateView(LoginRequiredMixin, CreateView):
             responsibilities = form.cleaned_data.get("responsibilities")
             if responsibilities:
                 for responsibility_obj in responsibilities:
-                    
+
                     if not responsibility_obj:
                         continue
                     ResponsibilityAssignment.objects.get_or_create(
@@ -711,9 +712,24 @@ class ObligationListView(LoginRequiredMixin, ListView):
     model = Obligation
     template_name = "obligations/obligations_list.html"
     context_object_name = "obligations"
+    paginate_by = 10
 
     def get_queryset(self):
-        return Obligation.objects.all()
+        project_id = self.request.GET.get("project_id")
+        if not project_id:
+            return Obligation.objects.none()
+
+        queryset = Obligation.objects.filter(
+            project_id=project_id,
+        ).order_by("-action_due_date")
+
+        return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["project_id"] = self.request.GET.get("project_id")
+        return context
+
 
 
 def upload_evidence(request, obligation_id):

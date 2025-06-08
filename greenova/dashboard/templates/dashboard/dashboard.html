@@ -53,7 +53,7 @@ Dashboard | Greenova
 {% block content %}
   <div class="dashboard-layout">
     <!-- Include our new sidebar component -->
-{% include "dashboard/components/sidebar.html" %}
+{% include "dashboard/components/sidebar.html" with selected_project_id=selected_project_id %}
     <!-- Main dashboard content area -->
     <main class="main-content">
       <!-- Dashboard welcome header - ALWAYS VISIBLE and above selector -->

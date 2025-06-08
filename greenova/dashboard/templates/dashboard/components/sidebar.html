@@ -61,7 +61,7 @@
         </a>
       </li>
       <li class="sidebar-nav-item" data-tooltip="Obligations">
-        <a href="{% url 'obligations:obligation_list' %}"
+        <a href="{% url 'obligations:obligation_list' %}?project_id=1"
            class="sidebar-nav-link
                   {% if request.resolver_match.namespace == 'obligations' %}
                     active
