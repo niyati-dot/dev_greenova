@@ -360,3 +360,7 @@ a.fab-button.obligation {
   font-size: 1.5rem;
   cursor: pointer;
 }
+
+.dashboard-charts.full-w {
+    display: block !important;
+}

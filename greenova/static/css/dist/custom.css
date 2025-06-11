@@ -36,3 +36,20 @@ section.project-selection {
 .sidebar.sidebar-collapsed .sidebar-nav-text {
   display: none !important;
 }
+.modal-placeholder:empty {
+  display: none !important;
+}
+
+#chartGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.procedure-chart-card {
+  border: 1px solid #ccc;
+  padding: 1rem;
+  border-radius: 8px;
+}
+

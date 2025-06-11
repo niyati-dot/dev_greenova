@@ -2,7 +2,7 @@ import logging
 import os
 from datetime import date, timedelta
 from typing import Any
-
+from django.utils import timezone
 from company.models import CompanyMembership
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -770,3 +770,26 @@ def upload_evidence(request, obligation_id):
             "form": form,
         },
     )
+
+def obligation_list_popup(request):
+    procedure_name = request.GET.get("procedure")
+    status = request.GET.get("status")
+    project_id = request.GET.get("project_id")
+
+    if not procedure_name or not status:
+        return HttpResponseBadRequest("Missing required parameters.")
+
+    obligations = Obligation.objects.filter(procedure=procedure_name)
+
+    today = timezone.now().date()
+
+    if status == "overdue":
+        obligations = obligations.filter(action_due_date__lt=today).exclude(status="completed")
+    else:
+        obligations = obligations.filter(status=status)
+    print(obligations)
+    return render(request, "obligations\components\_obligation_popup.html", {
+        "obligations": obligations,
+        "label": status,
+        "project_id": project_id,
+    })

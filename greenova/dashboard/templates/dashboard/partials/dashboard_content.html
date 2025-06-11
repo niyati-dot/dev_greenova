@@ -183,7 +183,7 @@ Active Mechanisms
 <!-- Data Container for Charts -->
 <div id="data-containers"
      data-hx-ext="class-tools"
-     class="dashboard-charts">
+     class="dashboard-charts full-w">
 
   <!-- Obligation Compliance Chart -->
   <div class="card chart-container">
@@ -209,134 +209,7 @@ Obligation Compliance
          {% endif %}
          hx-target="#obligation-compliance-chart"
          hx-swap="innerHTML">
-      {% if compliance_chart %}
-        <img src="data:image/png;base64,{{ compliance_chart }}" alt="Obligation Compliance Chart" />
-      {% else %}
-        <div class="loading-indicator">
-          <p>Loading chart data...</p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Obligations Status Chart (SVG) -->
-  <div class="card chart-container">
-    <div class="card-header">
-      <h3 class="card-header-title">Obligations Status</h3>
-    </div>
-    <div class="card-body">
-      {% if obligations_status_chart_svg %}
-        {{ obligations_status_chart_svg|safe }}
-      {% else %}
-        <p>No chart data available.</p>
-      {% endif %}
-    </div>
-  </div>
-
-  <!-- Mechanisms Chart -->
-  <div id="mechanism-data-container"
-       class="card chart-container"
-       hx-get="{% url 'mechanisms:mechanism_charts' %}"
-       hx-trigger="load"
-       hx-include="#project-selector"
-       hx-target="#mechanism-data-container"
-       hx-swap="innerHTML">
-    <div class="loading-indicator">
-      <span class="loading-spinner"></span>
-      <p>
-Loading chart data...
-      </p>
-    </div>
-  </div>
-
-  <!-- Procedures Chart -->
-  <div id="procedures-data-container"
-       class="card chart-container"
-       hx-get="{% url 'procedures:procedure_charts' %}"
-       hx-trigger="load"
-       hx-include="#project-selector"
-       hx-target="#procedures-data-container"
-       hx-swap="innerHTML">
-    <div class="loading-indicator">
-      <span class="loading-spinner"></span>
-      <p>
-Loading chart data...
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- Upcoming Obligations Table -->
-<section class="card data-table-container"
-         data-hx-ext="class-tools"
-         data-classes="add fade-in:0.8s">
-  <div class="card-header">
-    <h3 class="card-header-title">
-Upcoming Obligations
-    </h3>
-    <div class="card-header-actions">
-      <button class="btn-sm btn-outline"
-              hx-get="{% url 'obligations:obligation_list' %}"
-              hx-push-url="true">
-        View All
-      </button>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="table-container"
-         id="upcoming-obligations-table"
-         hx-get="{% url 'dashboard:upcoming_obligations' %}"
-         hx-trigger="load"
-         hx-include="#project-selector"
-         hx-target="#upcoming-obligations-table"
-         hx-swap="innerHTML">
-      {% if not selected_project_id %}
-        <div class="notice info" role="status">
-          <p>
-Please select a project to view upcoming obligations.
-          </p>
-        </div>
-      {% else %}
-        <div class="loading-indicator">
-          <span class="loading-spinner"></span>
-          <p>
-Loading obligations data...
-          </p>
-        </div>
-      {% endif %}
-    </div>
-  </div>
-</section>
-
-<!-- Projects at Risk -->
-<section class="card data-table-container"
-         data-hx-ext="class-tools"
-         data-classes="add fade-in:1s">
-  <div class="card-header">
-    <h3 class="card-header-title">
-Projects at Risk of Missing Deadlines
-    </h3>
-    <div class="card-header-actions">
-      <button class="btn-sm btn-outline"
-              hx-get="{% url 'projects:project_list' %}"
-              hx-push-url="true">
-        View All Projects
-      </button>
-    </div>
-  </div>
-  <div class="card-body">
-    <div class="table-container"
-         id="projects-at-risk-table"
-         hx-get="{% url 'dashboard:projects_at_risk' %}"
-         hx-trigger="load"
-         hx-target="#projects-at-risk-table"
-         hx-swap="innerHTML">
-      <div class="loading-indicator">
-        <span class="loading-spinner"></span>
-        <p>
-Loading projects data...
-        </p>
-      </div>
+        <canvas id="complianceChart" width="400" height="400" aria-label="Obligation Compliance Pie Chart" role="img"></canvas>
     </div>
   </div>
 </section>
@@ -352,4 +225,4 @@ Loading projects data...
 </div>
 {% endif %}
 <!-- Modal container for HTMX dynamic content -->
-<div id="modal-container" class="modal-placeholder"></div>
+<div id="modal-container" class="modal-placeholder hidden"></div>
